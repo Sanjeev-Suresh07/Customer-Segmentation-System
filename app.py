@@ -1,43 +1,49 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import numpy as np
 import joblib
+import plotly.express as px
+from pathlib import Path
+from datetime import datetime
+from uuid import uuid4
 
-from sklearn.metrics import silhouette_score
-
-
-# ============================================================
-# PAGE CONFIGURATION
-# ============================================================
-
+# =========================================================
+# PAGE CONFIG
+# =========================================================
 st.set_page_config(
-    page_title="Customer Segmentation & Behavior Analysis",
-    page_icon="📊",
+    page_title="Customer Segmentation Dashboard",
+    page_icon="🌿",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
+# =========================================================
+# PATHS
+# =========================================================
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+MODEL_DIR = BASE_DIR / "models"
 
-# ============================================================
-# FINAL MODEL CONFIGURATION
-# ============================================================
+DATA_FILE = DATA_DIR / "cleaned_customer_behavior.csv"
+NEW_CUSTOMERS_FILE = DATA_DIR / "new_customers.csv"
 
-NUMERIC_FEATURES = [
-    "Age",
-    "Total Spend"
-]
+SCALER_FILE = MODEL_DIR / "scaler.pkl"
+ENCODER_FILE = MODEL_DIR / "encoder.pkl"
+MODEL_FILE = MODEL_DIR / "kmeans_model.pkl"
 
-CATEGORICAL_FEATURES = [
-    "Membership Type",
-    "Discount Applied"
-]
+DATA_DIR.mkdir(exist_ok=True)
 
-N_CLUSTERS = 7
-
-
-# ============================================================
-# SEGMENT NAMES
-# ============================================================
+# =========================================================
+# COLORS
+# =========================================================
+BG = "#304840"
+CREAM = "#F7F4EA"
+WHITE = "#FFFFFF"
+SAGE = "#DCE8D8"
+GREEN = "#52796F"
+PEACH = "#E8C9B8"
+WHEAT = "#E8DFAF"
+TEXT = "#263A34"
 
 SEGMENT_NAMES = {
     0: "Bronze Regular Customers",
@@ -49,1689 +55,1111 @@ SEGMENT_NAMES = {
     6: "Silver Moderate Customers"
 }
 
+SEGMENT_COLORS = [
+    "#52796F",
+    "#E8C9B8",
+    "#E8DFAF",
+    "#8A9A9A",
+    "#D18A76",
+    "#B98261",
+    "#6F9388"
+]
 
-# ============================================================
-# MARKETING STRATEGIES
-# ============================================================
-
-MARKETING_STRATEGIES = {
-
+STRATEGIES = {
     "Bronze Regular Customers":
-        "Use personalized recommendations and loyalty rewards to encourage higher spending.",
-
+        "Encourage repeat purchases using loyalty rewards and personalized recommendations.",
     "Gold High Value Customers":
-        "Focus on retention, exclusive offers, loyalty benefits, and personalized promotions.",
-
+        "Provide exclusive benefits, premium support, and early access to new products.",
     "Silver Regular Customers":
-        "Encourage repeat purchases through targeted recommendations and moderate promotions.",
-
+        "Use targeted offers and bundles to increase purchase frequency.",
     "Gold Premium Customers":
-        "Provide premium products, VIP benefits, exclusive offers, and priority rewards.",
-
+        "Strengthen loyalty through VIP rewards and premium experiences.",
     "Silver Inactive Customers":
-        "Use re-engagement campaigns, reminders, and limited-time offers to encourage return purchases.",
-
+        "Re-engage customers with comeback offers and relevant recommendations.",
     "Bronze Discount Customers":
-        "Use targeted discounts, bundles, and personalized offers to increase purchase frequency.",
-
+        "Use targeted discounts and limited-time offers to encourage purchases.",
     "Silver Moderate Customers":
         "Encourage repeat purchases using bundles, personalized recommendations, and loyalty incentives."
 }
 
+# =========================================================
+# CSS
+# =========================================================
+st.markdown("""
+<style>
+:root {
+    --forest: #304840;
+    --cream: #F7F4EA;
+    --sage: #DCE8D8;
+    --green: #52796F;
+    --peach: #E8C9B8;
+    --wheat: #E8DFAF;
+}
 
-# ============================================================
-# SEGMENT COLORS
-# ============================================================
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="stHeader"] {
+    background: var(--forest) !important;
+}
 
-SEGMENT_COLORS = {
+/* Soft botanical texture without affecting content contrast */
+.stApp {
+    background-image:
+        radial-gradient(ellipse at 8% 8%, rgba(111,147,136,0.16) 0, rgba(111,147,136,0.05) 19%, transparent 38%),
+        radial-gradient(ellipse at 92% 22%, rgba(220,232,216,0.10) 0, transparent 28%),
+        radial-gradient(ellipse at 75% 92%, rgba(82,121,111,0.20) 0, transparent 34%),
+        linear-gradient(135deg, #304840 0%, #2B4139 55%, #304840 100%) !important;
+    background-attachment: fixed !important;
+}
 
-    "Bronze Regular Customers": "#6366F1",
+.block-container {
+    max-width: 1500px;
+    padding-top: 3.5rem !important;
+    padding-bottom: 3rem;
+}
 
-    "Gold High Value Customers": "#10B981",
+/* Header */
+.eyebrow {
+    color: var(--sage) !important;
+    font-size: 0.78rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 3px !important;
+    line-height: 1.8 !important;
+    padding-top: 8px !important;
+    margin-top: 8px !important;
+    margin-bottom: 14px !important;
+    overflow: visible !important;
+}
 
-    "Silver Regular Customers": "#8B5CF6",
+.hero-title {
+    color: var(--cream) !important;
+    font-size: 2.65rem !important;
+    font-weight: 800 !important;
+    line-height: 1.25 !important;
+    margin: 0 0 10px 0 !important;
+    padding: 0 !important;
+}
 
-    "Gold Premium Customers": "#F59E0B",
+.hero-subtitle {
+    color: var(--sage) !important;
+    font-size: 1rem !important;
+    line-height: 1.6 !important;
+    margin-bottom: 26px !important;
+}
 
-    "Silver Inactive Customers": "#EF4444",
+/* General text */
+h1, h2, h3, h4, p {
+    color: var(--cream);
+}
 
-    "Bronze Discount Customers": "#EC4899",
+.section-title {
+    color: var(--cream) !important;
+    font-size: 1.35rem;
+    font-weight: 750;
+    margin-top: 20px;
+    margin-bottom: 4px;
+}
 
-    "Silver Moderate Customers": "#3B82F6"
+.section-subtitle {
+    color: var(--sage) !important;
+    font-size: 0.9rem;
+    margin-bottom: 18px;
+}
+
+/* Navigation */
+div[role="radiogroup"] {
+    background: var(--cream) !important;
+    padding: 8px !important;
+    border-radius: 14px !important;
+    gap: 8px !important;
+    width: fit-content;
+}
+
+div[role="radiogroup"] label {
+    color: var(--forest) !important;
+    background: transparent !important;
+    border-radius: 10px !important;
+    padding: 9px 16px !important;
+    opacity: 1 !important;
+}
+
+div[role="radiogroup"] label p,
+div[role="radiogroup"] label span,
+div[role="radiogroup"] label div {
+    color: var(--forest) !important;
+    opacity: 1 !important;
+    font-weight: 650 !important;
+}
+
+div[role="radiogroup"] label:has(input:checked) {
+    background: var(--sage) !important;
+}
+
+div[role="radiogroup"] label {
+    transition: box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease !important;
+}
+div[role="radiogroup"] label:hover {
+    background: #EAF1E7 !important;
+    box-shadow: 0 0 0 1px rgba(232,201,184,0.18), 0 0 16px rgba(232,137,91,0.18) !important;
+    transform: translateY(-1px);
+}
+
+/* Hover effects */
+[data-testid="stMetric"],
+.hover-card,
+[data-testid="stDataFrame"],
+div[data-testid="stPlotlyChart"] {
+    transition:
+        transform 0.22s ease,
+        box-shadow 0.22s ease,
+        border-color 0.22s ease !important;
+}
+
+[data-testid="stMetric"]:hover,
+.hover-card:hover {
+    transform: translateY(-6px);
+    box-shadow:
+        0 12px 28px rgba(0,0,0,0.24),
+        0 0 0 1px rgba(232,137,91,0.32),
+        0 0 24px rgba(232,137,91,0.28) !important;
+    border-color: rgba(232,137,91,0.62) !important;
+}
+
+div[data-testid="stPlotlyChart"]:hover,
+[data-testid="stDataFrame"]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+}
+
+/* Metric cards */
+[data-testid="stMetric"] {
+    background: var(--cream) !important;
+    border: 1px solid rgba(220,232,216,0.45) !important;
+    border-radius: 17px !important;
+    padding: 22px !important;
+    min-height: 125px;
+}
+
+[data-testid="stMetric"] * {
+    color: var(--forest) !important;
+    opacity: 1 !important;
+}
+
+[data-testid="stMetricLabel"] {
+    font-weight: 750 !important;
+}
+
+/* Custom cards */
+.hover-card {
+    background: var(--cream);
+    border: 1px solid rgba(220,232,216,0.4);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 14px;
+}
+
+.hover-card h3,
+.hover-card p {
+    color: var(--forest) !important;
+}
+
+/* Translucent dark-blue cards for the one-segment overview state */
+.overview-summary-card {
+    background: linear-gradient(135deg, rgba(20, 48, 73, 0.88), rgba(31, 65, 91, 0.78)) !important;
+    border: 1px solid rgba(164, 198, 219, 0.38) !important;
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+}
+.overview-summary-card,
+.overview-summary-card div {
+    color: #F7F4EA !important;
+}
+.prediction-card {
+    background: linear-gradient(135deg, rgba(24,54,78,0.86), rgba(20,43,65,0.86)) !important;
+    border: 1px solid rgba(150,190,215,0.32) !important;
+    backdrop-filter: blur(8px);
+}
+.prediction-card h2, .prediction-card p { color: #F4FAFF !important; }
+
+/* Inputs */
+.stTextInput label,
+.stNumberInput label,
+.stSelectbox label,
+.stMultiSelect label,
+.stSlider label {
+    color: var(--cream) !important;
+}
+[data-testid="stMultiSelect"] [data-baseweb="tag"] span,
+[data-testid="stMultiSelect"] [data-baseweb="tag"] svg {
+    color: var(--forest) !important;
+}
+[data-testid="stMultiSelect"] [data-baseweb="select"] input {
+    color: var(--forest) !important;
+}
+[data-testid="stMultiSelect"] [data-baseweb="select"] div {
+    color: var(--forest);
+}
+
+.stTextInput input,
+.stNumberInput input,
+.stSelectbox div[data-baseweb="select"] > div,
+.stMultiSelect div[data-baseweb="select"] > div {
+    background: var(--cream) !important;
+    color: var(--forest) !important;
+    border-radius: 10px !important;
+}
+
+/* Buttons */
+.stButton button,
+.stDownloadButton button {
+    background: #1E302B !important;
+    color: var(--cream) !important;
+    border: 1px solid rgba(220,232,216,0.28) !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    transition: all 0.2s ease !important;
+}
+
+.stButton button:hover,
+.stDownloadButton button:hover {
+    background: #263D35 !important;
+    color: var(--cream) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 1px rgba(232,201,184,0.14), 0 0 11px rgba(232,137,91,0.16);
+}
+
+/* Tables */
+[data-testid="stDataFrame"] {
+    background: var(--cream) !important;
+    border-radius: 12px;
+    padding: 8px;
+}
+
+[data-testid="stCaptionContainer"] {
+    color: var(--sage) !important;
+}
+
+/* Selectable tags / chips */
+[data-baseweb="tag"] {
+    background: #DCE8D8 !important;
+    border: 1px solid #8EAD9B !important;
+    transition: box-shadow 0.2s ease, filter 0.2s ease !important;
+}
+[data-baseweb="tag"]:hover {
+    box-shadow: 0 0 14px rgba(232,137,91,0.18) !important;
+    filter: brightness(1.04);
+}
+
+[data-testid="stPlotlyChart"] {
+    border: 1px solid rgba(220,232,216,0.18);
+    border-radius: 14px;
+    padding: 5px;
 }
 
 
-# ============================================================
-# LOAD DATA + SAVED MODEL
-# ============================================================
+hr {
+    border-color: rgba(220,232,216,0.3) !important;
+}
 
+footer {
+    visibility: hidden;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+# =========================================================
+# LOAD DATA
+# =========================================================
 @st.cache_data
-def load_data_and_model():
+def load_data():
+    if DATA_FILE.exists():
+        return pd.read_csv(DATA_FILE)
+    return pd.DataFrame()
 
-    # --------------------------------------------------------
-    # Load cleaned customer dataset
-    # --------------------------------------------------------
 
-    df = pd.read_csv(
-        "data/cleaned_customer_behavior.csv"
+# =========================================================
+# LOAD SAVED MODELS - JOBLIB FIX
+# =========================================================
+@st.cache_resource
+def load_models():
+    required_files = [SCALER_FILE, ENCODER_FILE, MODEL_FILE]
+
+    missing_files = [
+        str(path) for path in required_files if not path.exists()
+    ]
+
+    if missing_files:
+        st.error("Missing model files: " + ", ".join(missing_files))
+        return None, None, None
+
+    try:
+        scaler = joblib.load(SCALER_FILE)
+        encoder = joblib.load(ENCODER_FILE)
+        model = joblib.load(MODEL_FILE)
+
+        return scaler, encoder, model
+
+    except Exception as error:
+        st.error(f"Could not load saved models: {error}")
+        return None, None, None
+
+
+df = load_data()
+scaler, encoder, kmeans_model = load_models()
+
+if df.empty:
+    st.error(
+        "Dataset not found. Ensure data/cleaned_customer_behavior.csv exists."
     )
+    st.stop()
 
 
-    # --------------------------------------------------------
-    # Load saved preprocessing objects and K-Means model
-    # --------------------------------------------------------
-
-    scaler = joblib.load(
-        "models/scaler.pkl"
-    )
-
-    encoder = joblib.load(
-        "models/encoder.pkl"
-    )
-
-    kmeans = joblib.load(
-        "models/kmeans_model.pkl"
-    )
+# =========================================================
+# FEATURE COLUMNS
+# =========================================================
+NUMERIC_FEATURES = ["Age", "Total Spend"]
+CATEGORICAL_FEATURES = ["Membership Type", "Discount Applied"]
 
 
-    # --------------------------------------------------------
-    # Transform numerical features
-    # --------------------------------------------------------
+def prepare_customer_features(customer_df):
+    numeric_data = customer_df[NUMERIC_FEATURES].copy()
+    categorical_data = customer_df[CATEGORICAL_FEATURES].copy()
 
-    X_numeric = scaler.transform(
-        df[NUMERIC_FEATURES]
-    )
+    numeric_scaled = scaler.transform(numeric_data)
+    categorical_encoded = encoder.transform(categorical_data)
 
-
-    # --------------------------------------------------------
-    # Transform categorical features
-    # --------------------------------------------------------
-
-    X_categorical = encoder.transform(
-        df[CATEGORICAL_FEATURES]
-    )
-
-
-    # --------------------------------------------------------
-    # Combine transformed features
-    # --------------------------------------------------------
-
-    X_final = pd.concat(
-        [
-            pd.DataFrame(X_numeric),
-            pd.DataFrame(X_categorical)
-        ],
+    return np.concatenate(
+        [numeric_scaled, categorical_encoded],
         axis=1
-    ).values
-
-
-    # --------------------------------------------------------
-    # Generate predictions using saved K-Means model
-    # --------------------------------------------------------
-
-    df["Cluster"] = kmeans.predict(
-        X_final
     )
 
 
-    # --------------------------------------------------------
-    # Assign segment names
-    # --------------------------------------------------------
+def predict_customer(customer_df):
+    features = prepare_customer_features(customer_df)
+    cluster_id = int(kmeans_model.predict(features)[0])
+    segment_name = SEGMENT_NAMES.get(cluster_id, f"Segment {cluster_id}")
 
-    df["Segment"] = df["Cluster"].map(
-        SEGMENT_NAMES
-    )
-
-
-    # --------------------------------------------------------
-    # Assign marketing strategies
-    # --------------------------------------------------------
-
-    df["Marketing Strategy"] = df[
-        "Segment"
-    ].map(
-        MARKETING_STRATEGIES
-    )
+    return cluster_id, segment_name
 
 
-    # --------------------------------------------------------
-    # Calculate Silhouette Score
-    # --------------------------------------------------------
-
-    silhouette = silhouette_score(
-        X_final,
-        df["Cluster"]
-    )
-
-
-    return df, silhouette
-
-
-# Load final application data
-df, FINAL_SILHOUETTE = load_data_and_model()
-
-FINAL_CLUSTERS = df["Cluster"].nunique()
-
-
-# ============================================================
-# CUSTOM CSS
-# ============================================================
-
-st.markdown(
-    """
-    <style>
-
-    /* ========================================================
-       GLOBAL
-       ======================================================== */
-
-    .stApp {
-
-        background:
-            radial-gradient(
-                circle at 90% 10%,
-                rgba(16,185,129,0.10),
-                transparent 30%
-            ),
-
-            radial-gradient(
-                circle at 10% 10%,
-                rgba(99,102,241,0.10),
-                transparent 30%
-            ),
-
-            #0B0F17;
+# =========================================================
+# FIND COLUMNS
+# =========================================================
+def find_column(names):
+    lookup = {
+        str(col).strip().lower(): col
+        for col in df.columns
     }
 
+    for name in names:
+        if name.lower() in lookup:
+            return lookup[name.lower()]
 
-    .main {
-        padding-top: 1rem;
-    }
+    for col in df.columns:
+        for name in names:
+            if name.lower() in str(col).lower():
+                return col
 
+    return None
 
-    /* ========================================================
-       SIDEBAR
-       ======================================================== */
 
-    section[data-testid="stSidebar"] {
+segment_col = find_column([
+    "Segment Name", "Segment", "Cluster Name",
+    "Cluster", "Customer Segment"
+])
 
-        background:
-            linear-gradient(
-                180deg,
-                #111827 0%,
-                #0B111B 100%
-            );
+spend_col = find_column(["Total Spend", "Total_Spend", "Spend"])
+age_col = find_column(["Age", "Customer Age"])
+membership_col = find_column(["Membership Type", "Membership_Type"])
+discount_col = find_column(["Discount Applied", "Discount_Applied"])
 
-        border-right:
-            1px solid rgba(255,255,255,0.08);
-    }
 
-
-    section[data-testid="stSidebar"] .block-container {
-
-        padding-top: 2rem;
-    }
-
-
-    .sidebar-title {
-
-        font-size: 1.05rem;
-
-        font-weight: 700;
-
-        color: #F8FAFC;
-
-        margin-bottom: 0.8rem;
-    }
-
-
-    .sidebar-description {
-
-        color: #AAB4C5;
-
-        font-size: 0.86rem;
-
-        line-height: 1.65;
-    }
-
-
-    .sidebar-divider {
-
-        border-top:
-            1px solid rgba(255,255,255,0.12);
-
-        margin: 1.5rem 0;
-    }
-
-
-    .model-card {
-
-        background:
-            linear-gradient(
-                135deg,
-                rgba(16,185,129,0.10),
-                rgba(15,23,42,0.55)
-            );
-
-        border:
-            1px solid rgba(16,185,129,0.35);
-
-        border-radius: 14px;
-
-        padding: 1rem;
-
-        box-shadow:
-            0 8px 30px rgba(0,0,0,0.18);
-    }
-
-
-    .model-line {
-
-        color: #CBD5E1;
-
-        font-size: 0.82rem;
-
-        margin: 0.42rem 0;
-    }
-
-
-    .model-value {
-
-        color: #F8FAFC;
-
-        font-weight: 600;
-    }
-
-
-    .ready-badge {
-
-        display: inline-block;
-
-        margin-top: 0.65rem;
-
-        padding: 0.35rem 0.7rem;
-
-        border-radius: 999px;
-
-        color: #6EE7B7;
-
-        border:
-            1px solid rgba(16,185,129,0.45);
-
-        background:
-            rgba(16,185,129,0.08);
-
-        font-size: 0.75rem;
-
-        font-weight: 600;
-    }
-
-
-    .pipeline {
-
-        color: #AAB4C5;
-
-        font-size: 0.82rem;
-
-        line-height: 1.75;
-    }
-
-
-    /* ========================================================
-       HERO
-       ======================================================== */
-
-    .hero {
-
-        background:
-            linear-gradient(
-                135deg,
-                rgba(99,102,241,0.10),
-                rgba(16,185,129,0.08)
-            );
-
-        border:
-            1px solid rgba(255,255,255,0.07);
-
-        border-radius: 18px;
-
-        padding: 1.4rem 1.5rem;
-
-        margin-bottom: 1.25rem;
-
-        box-shadow:
-            0 12px 40px rgba(0,0,0,0.16);
-    }
-
-
-    .hero h1 {
-
-        color: #F8FAFC;
-
-        margin: 0 0 0.55rem 0;
-
-        font-size: 2rem;
-
-        font-weight: 800;
-    }
-
-
-    .hero p {
-
-        color: #AAB4C5;
-
-        margin: 0;
-
-        font-size: 0.94rem;
-
-        line-height: 1.7;
-    }
-
-
-    /* ========================================================
-       KPI CARDS
-       ======================================================== */
-
-    .metric-card {
-
-        background:
-            linear-gradient(
-                145deg,
-                rgba(30,41,59,0.78),
-                rgba(15,23,42,0.88)
-            );
-
-        border:
-            1px solid rgba(148,163,184,0.18);
-
-        border-radius: 16px;
-
-        padding: 1.15rem;
-
-        min-height: 125px;
-
-        box-shadow:
-            0 8px 28px rgba(0,0,0,0.18);
-
-        transition:
-            transform 0.2s ease,
-            border-color 0.2s ease,
-            box-shadow 0.2s ease;
-    }
-
-
-    .metric-card:hover {
-
-        transform:
-            translateY(-3px);
-
-        border-color:
-            rgba(16,185,129,0.45);
-
-        box-shadow:
-            0 12px 35px rgba(16,185,129,0.10);
-    }
-
-
-    .metric-label {
-
-        color: #94A3B8;
-
-        font-size: 0.78rem;
-
-        margin-bottom: 0.55rem;
-    }
-
-
-    .metric-value {
-
-        color: #F8FAFC;
-
-        font-size: 1.65rem;
-
-        font-weight: 750;
-    }
-
-
-    .metric-accent {
-
-        width: 45px;
-
-        height: 4px;
-
-        border-radius: 10px;
-
-        margin-top: 0.8rem;
-
-        background:
-            linear-gradient(
-                90deg,
-                #10B981,
-                #6366F1
-            );
-    }
-
-
-    /* ========================================================
-       SECTION HEADINGS
-       ======================================================== */
-
-    .section-title {
-
-        color: #F8FAFC;
-
-        font-size: 1.25rem;
-
-        font-weight: 750;
-
-        margin-top: 1.2rem;
-
-        margin-bottom: 0.35rem;
-    }
-
-
-    .section-description {
-
-        color: #94A3B8;
-
-        font-size: 0.86rem;
-
-        margin-bottom: 0.9rem;
-    }
-
-
-    /* ========================================================
-       CHART TITLES
-       ======================================================== */
-
-    .chart-title {
-
-        color: #F8FAFC;
-
-        font-size: 0.92rem;
-
-        font-weight: 700;
-
-        margin:
-            0.15rem 0
-            0.3rem 0.35rem;
-    }
-
-
-    .chart-subtitle {
-
-        color: #64748B;
-
-        font-size: 0.75rem;
-
-        margin:
-            0 0
-            0.35rem 0.35rem;
-    }
-
-
-    /* ========================================================
-       SEGMENT CARD
-       ======================================================== */
-
-    .segment-card {
-
-        background:
-            linear-gradient(
-                145deg,
-                rgba(30,41,59,0.75),
-                rgba(15,23,42,0.9)
-            );
-
-        border:
-            1px solid rgba(148,163,184,0.16);
-
-        border-radius: 16px;
-
-        padding: 1.1rem;
-
-        margin-top: 0.5rem;
-
-        box-shadow:
-            0 10px 30px rgba(0,0,0,0.18);
-    }
-
-
-    .segment-name {
-
-        color: #F8FAFC;
-
-        font-size: 1.05rem;
-
-        font-weight: 750;
-
-        margin-bottom: 0.5rem;
-    }
-
-
-    .segment-text {
-
-        color: #AAB4C5;
-
-        font-size: 0.84rem;
-
-        line-height: 1.6;
-    }
-
-
-    /* ========================================================
-       INFO CARD
-       ======================================================== */
-
-    .info-card {
-
-        background:
-            linear-gradient(
-                135deg,
-                rgba(16,185,129,0.08),
-                rgba(15,23,42,0.80)
-            );
-
-        border-left:
-            3px solid #10B981;
-
-        border-radius: 12px;
-
-        padding: 1rem 1.1rem;
-
-        margin: 1rem 0;
-
-        box-shadow:
-            0 8px 25px rgba(16,185,129,0.06);
-    }
-
-
-    .info-title {
-
-        color: #6EE7B7;
-
-        font-weight: 700;
-
-        margin-bottom: 0.35rem;
-    }
-
-
-    .info-text {
-
-        color: #CBD5E1;
-
-        line-height: 1.6;
-
-        font-size: 0.86rem;
-    }
-
-
-    /* ========================================================
-       FOOTER
-       ======================================================== */
-
-    .footer {
-
-        text-align: center;
-
-        color: #64748B;
-
-        font-size: 0.75rem;
-
-        padding:
-            1.5rem 0
-            0.5rem 0;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# SIDEBAR
-# ============================================================
-
-with st.sidebar:
-
-    st.markdown(
-        '<div class="sidebar-title">'
-        '📊 Customer Analytics'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-    st.markdown(
-        '<div class="sidebar-description">'
-        'Analyze customer purchasing behavior, identify meaningful '
-        'customer segments, and discover targeted marketing '
-        'opportunities.'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-    st.markdown(
-        '<div class="sidebar-divider"></div>',
-        unsafe_allow_html=True
-    )
-
-
-    st.markdown(
-        '<div class="sidebar-title">'
-        'Model Information'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-    st.markdown(
-        '<div class="model-card">'
-
-        '<div class="model-line">'
-        'Algorithm: '
-        '<span class="model-value">'
-        'K-Means Clustering'
-        '</span>'
-        '</div>'
-
-        '<div class="model-line">'
-        'Clusters: '
-        f'<span class="model-value">'
-        f'{FINAL_CLUSTERS}'
-        '</span>'
-        '</div>'
-
-        '<div class="model-line">'
-        'Numerical Features: '
-        '<span class="model-value">'
-        '2'
-        '</span>'
-        '</div>'
-
-        '<div class="model-line">'
-        'Categorical Features: '
-        '<span class="model-value">'
-        '2'
-        '</span>'
-        '</div>'
-
-        '<div class="model-line">'
-        'Scaling: '
-        '<span class="model-value">'
-        'MinMaxScaler'
-        '</span>'
-        '</div>'
-
-        '<div class="model-line">'
-        'Encoding: '
-        '<span class="model-value">'
-        'OneHotEncoder'
-        '</span>'
-        '</div>'
-
-        '<div class="model-line">'
-        'Silhouette Score: '
-        f'<span class="model-value">'
-        f'{FINAL_SILHOUETTE:.3f}'
-        '</span>'
-        '</div>'
-
-        '<span class="ready-badge">'
-        '● Model Ready'
-        '</span>'
-
-        '</div>',
-
-        unsafe_allow_html=True
-    )
-
-
-    st.markdown(
-        '<div class="sidebar-divider"></div>',
-        unsafe_allow_html=True
-    )
-
-
-    # ========================================================
-    # INTERACTIVE FILTERS
-    # ========================================================
-
-    st.markdown(
-        '<div class="sidebar-title">'
-        'Dashboard Filters'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-    membership_options = sorted(
-        df[
-            "Membership Type"
-        ]
-        .dropna()
-        .unique()
-        .tolist()
-    )
-
-
-    selected_memberships = st.multiselect(
-        "Membership Type",
-
-        membership_options,
-
-        default=membership_options
-    )
-
-
-    discount_options = sorted(
-        df[
-            "Discount Applied"
-        ]
-        .dropna()
-        .unique()
-        .tolist()
-    )
-
-
-    selected_discount = st.multiselect(
-        "Discount Applied",
-
-        discount_options,
-
-        default=discount_options,
-
-        format_func=lambda x:
-            "Yes" if x else "No"
-    )
-
-
-    filtered_df = df[
-        df[
-            "Membership Type"
-        ].isin(
-            selected_memberships
+if segment_col:
+    if pd.api.types.is_numeric_dtype(df[segment_col]):
+        df["Dashboard Segment"] = df[segment_col].map(
+            lambda x: SEGMENT_NAMES.get(int(x), f"Segment {x}")
+            if pd.notna(x) else "Unknown"
         )
-        &
-        df[
-            "Discount Applied"
-        ].isin(
-            selected_discount
+    else:
+        df["Dashboard Segment"] = df[segment_col].astype(str)
+else:
+    df["Dashboard Segment"] = "All Customers"
+
+
+# =========================================================
+# HELPERS
+# =========================================================
+def section(title, subtitle):
+    st.markdown(
+        f'<div class="section-title">{title}</div>'
+        f'<div class="section-subtitle">{subtitle}</div>',
+        unsafe_allow_html=True
+    )
+
+
+def style_chart(fig, height=370):
+    fig.update_layout(
+        height=height,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color=CREAM, family="Arial"),
+        margin=dict(l=20, r=20, t=25, b=25),
+        legend=dict(font=dict(color=CREAM)),
+        xaxis=dict(
+            color=CREAM,
+            gridcolor="rgba(220,232,216,0.15)"
+        ),
+        yaxis=dict(
+            color=CREAM,
+            gridcolor="rgba(220,232,216,0.15)"
         )
-    ].copy()
-
-
-    st.caption(
-        f"Showing {len(filtered_df)} "
-        f"of {len(df)} customers"
     )
+    return fig
 
 
-    st.markdown(
-        '<div class="sidebar-divider"></div>',
-        unsafe_allow_html=True
-    )
+def show_chart(fig, height=370):
+    if fig is None or not getattr(fig, "data", None):
+        st.info("There is not enough valid data to display this chart.")
+        return
+    style_chart(fig, height)
+    st.plotly_chart(fig, use_container_width=True)
 
 
-    st.markdown(
-        '<div class="sidebar-title">'
-        'Project Pipeline'
-        '</div>',
-        unsafe_allow_html=True
-    )
+def safe_numeric(series):
+    values = pd.to_numeric(series, errors="coerce")
+    return values.replace([np.inf, -np.inf], np.nan).dropna()
 
 
-    st.markdown(
-        '<div class="pipeline">'
-        'Dataset → Cleaning → EDA → '
-        'Feature Selection → Scaling → Encoding → '
-        'K-Means → Customer Segments → Marketing Insights'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-
-# ============================================================
-# HERO
-# ============================================================
+# =========================================================
+# HEADER
+# =========================================================
+st.markdown(
+    '<div class="eyebrow">CUSTOMER INSIGHTS</div>',
+    unsafe_allow_html=True
+)
 
 st.markdown(
-    '<div class="hero">'
+    '<div class="hero-title">Customer Segmentation</div>',
+    unsafe_allow_html=True
+)
 
-    '<h1>'
-    '📊 Customer Segmentation & Behavior Analysis'
-    '</h1>'
-
-    '<p>'
-    'Transform customer behavior into actionable insights. '
-    'Explore purchasing patterns, understand customer segments, '
-    'and identify targeted marketing opportunities using '
-    'data-driven K-Means clustering.'
-    '</p>'
-
+st.markdown(
+    '<div class="hero-subtitle">'
+    'Understand customer behaviour and discover meaningful groups '
+    'for personalized marketing.'
     '</div>',
-
     unsafe_allow_html=True
 )
 
 
-# ============================================================
-# KPI CALCULATIONS
-# ============================================================
-
-total_customers = len(
-    filtered_df
-)
-
-
-segment_count = filtered_df[
-    "Segment"
-].nunique()
-
-
-average_spend = (
-
-    filtered_df[
-        "Total Spend"
-    ].mean()
-
-    if len(filtered_df) > 0
-
-    else 0
-)
-
-
-average_rating = (
-
-    filtered_df[
-        "Average Rating"
-    ].mean()
-
-    if len(filtered_df) > 0
-
-    else 0
-)
-
-
-high_value_count = len(
-    filtered_df[
-        filtered_df[
-            "Segment"
-        ]
-        ==
-        "Gold High Value Customers"
-    ]
-)
-
-
-# ============================================================
-# KPI CARDS
-# ============================================================
-
-kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
-
-
-with kpi1:
-
-    st.markdown(
-        '<div class="metric-card">'
-
-        '<div class="metric-label">'
-        'Total Customers'
-        '</div>'
-
-        f'<div class="metric-value">'
-        f'{total_customers}'
-        f'</div>'
-
-        '<div class="metric-accent"></div>'
-
-        '</div>',
-
-        unsafe_allow_html=True
-    )
-
-
-with kpi2:
-
-    st.markdown(
-        '<div class="metric-card">'
-
-        '<div class="metric-label">'
-        'Customer Segments'
-        '</div>'
-
-        f'<div class="metric-value">'
-        f'{segment_count}'
-        f'</div>'
-
-        '<div class="metric-accent"></div>'
-
-        '</div>',
-
-        unsafe_allow_html=True
-    )
-
-
-with kpi3:
-
-    st.markdown(
-        '<div class="metric-card">'
-
-        '<div class="metric-label">'
-        'Average Spend'
-        '</div>'
-
-        f'<div class="metric-value">'
-        f'₹{average_spend:,.2f}'
-        f'</div>'
-
-        '<div class="metric-accent"></div>'
-
-        '</div>',
-
-        unsafe_allow_html=True
-    )
-
-
-with kpi4:
-
-    st.markdown(
-        '<div class="metric-card">'
-
-        '<div class="metric-label">'
-        'Average Rating'
-        '</div>'
-
-        f'<div class="metric-value">'
-        f'{average_rating:.2f}'
-        f'</div>'
-
-        '<div class="metric-accent"></div>'
-
-        '</div>',
-
-        unsafe_allow_html=True
-    )
-
-
-with kpi5:
-
-    st.markdown(
-        '<div class="metric-card">'
-
-        '<div class="metric-label">'
-        'High Value Customers'
-        '</div>'
-
-        f'<div class="metric-value">'
-        f'{high_value_count}'
-        f'</div>'
-
-        '<div class="metric-accent"></div>'
-
-        '</div>',
-
-        unsafe_allow_html=True
-    )
-
-
-# ============================================================
-# OVERVIEW
-# ============================================================
-
-st.markdown(
-    '<div class="section-title">'
-    'Customer Segmentation Overview'
-    '</div>',
-
-    unsafe_allow_html=True
-)
-
-
-st.markdown(
-    '<div class="section-description">'
-    'The final K-Means model groups customers using demographic, '
-    'spending, membership, and discount characteristics. '
-    'Use the interactive filters in the sidebar to explore '
-    'different customer populations.'
-    '</div>',
-
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# CHART 1 — CUSTOMER DISTRIBUTION
-# ============================================================
-
-segment_counts = (
-    filtered_df[
-        "Segment"
-    ]
-    .value_counts()
-    .reset_index()
-)
-
-
-segment_counts.columns = [
-    "Segment",
-    "Customers"
+# =========================================================
+# NAVIGATION
+# =========================================================
+pages = [
+    "Overview",
+    "Segment Explorer",
+    "Segment Summary",
+    "Customer Data",
+    "Customer Prediction"
 ]
 
-
-segment_counts = segment_counts.sort_values(
-    "Customers",
-    ascending=True
+page = st.radio(
+    "Navigation",
+    pages,
+    horizontal=True,
+    label_visibility="collapsed"
 )
 
+st.write("")
 
-fig_distribution = px.bar(
 
-    segment_counts,
+# =========================================================
+# OVERVIEW
+# =========================================================
+if page == "Overview":
 
-    x="Customers",
-
-    y="Segment",
-
-    orientation="h",
-
-    text="Customers",
-
-    color="Segment",
-
-    color_discrete_map=SEGMENT_COLORS
-)
-
-
-fig_distribution.update_traces(
-
-    textposition="outside",
-
-    hovertemplate=(
-        "<b>%{y}</b><br>"
-        "Customers: %{x}"
-        "<extra></extra>"
-    )
-)
-
-
-fig_distribution.update_layout(
-
-    height=390,
-
-    margin=dict(
-        l=5,
-        r=30,
-        t=5,
-        b=5
-    ),
-
-    showlegend=False,
-
-    paper_bgcolor="rgba(0,0,0,0)",
-
-    plot_bgcolor="rgba(0,0,0,0)",
-
-    font=dict(
-        color="#CBD5E1"
-    ),
-
-    xaxis=dict(
-        title="Customers",
-
-        gridcolor=
-        "rgba(148,163,184,0.15)"
-    ),
-
-    yaxis=dict(
-        title="",
-
-        categoryorder=
-        "total ascending"
-    )
-)
-
-
-# ============================================================
-# CHART 2 — SPENDING VS ITEMS
-# ============================================================
-
-fig_scatter = px.scatter(
-
-    filtered_df,
-
-    x="Total Spend",
-
-    y="Items Purchased",
-
-    color="Segment",
-
-    color_discrete_map=SEGMENT_COLORS,
-
-    hover_data=[
-        "Customer ID",
-        "Age",
-        "Average Rating",
-        "Days Since Last Purchase",
-        "Membership Type",
-        "Discount Applied"
-    ]
-)
-
-
-fig_scatter.update_traces(
-
-    marker=dict(
-        size=9,
-        opacity=0.82
-    )
-)
-
-
-fig_scatter.update_layout(
-
-    height=390,
-
-    margin=dict(
-        l=5,
-        r=5,
-        t=5,
-        b=5
-    ),
-
-    paper_bgcolor="rgba(0,0,0,0)",
-
-    plot_bgcolor="rgba(0,0,0,0)",
-
-    font=dict(
-        color="#CBD5E1"
-    ),
-
-    legend=dict(
-
-        title="Customer Segment",
-
-        font=dict(
-            size=10
-        )
-    ),
-
-    xaxis=dict(
-
-        title="Total Spend",
-
-        gridcolor=
-        "rgba(148,163,184,0.15)"
-    ),
-
-    yaxis=dict(
-
-        title="Items Purchased",
-
-        gridcolor=
-        "rgba(148,163,184,0.15)"
-    )
-)
-
-
-# ============================================================
-# CHART CONTAINERS
-# ============================================================
-
-col1, col2 = st.columns(2)
-
-
-with col1:
-
-    with st.container(border=True):
-
-        st.markdown(
-            '<div class="chart-title">'
-            'Customer Distribution by Segment'
-            '</div>'
-
-            '<div class="chart-subtitle">'
-            'Interactive segment population overview'
-            '</div>',
-
-            unsafe_allow_html=True
-        )
-
-
-        st.plotly_chart(
-
-            fig_distribution,
-
-            use_container_width=True,
-
-            config={
-                "displayModeBar": "hover",
-                "displaylogo": False
-            }
-        )
-
-
-with col2:
-
-    with st.container(border=True):
-
-        st.markdown(
-            '<div class="chart-title">'
-            'Spending vs Items Purchased'
-            '</div>'
-
-            '<div class="chart-subtitle">'
-            'Hover over customers for detailed behavior'
-            '</div>',
-
-            unsafe_allow_html=True
-        )
-
-
-        st.plotly_chart(
-
-            fig_scatter,
-
-            use_container_width=True,
-
-            config={
-                "displayModeBar": "hover",
-                "displaylogo": False
-            }
-        )
-
-
-# ============================================================
-# INTERACTIVE TABS
-# ============================================================
-
-tab1, tab2, tab3 = st.tabs(
-    [
-        "🔎 Segment Explorer",
-        "📋 Segment Summary",
-        "👥 Customer Data"
-    ]
-)
-
-
-# ============================================================
-# TAB 1 — SEGMENT EXPLORER
-# ============================================================
-
-with tab1:
-
-    st.markdown(
-        '<div class="section-title">'
-        'Explore a Customer Segment'
-        '</div>',
-
-        unsafe_allow_html=True
+    section(
+        "Project overview",
+        "A quick view of customer groups and overall spending."
     )
 
-
-    st.markdown(
-        '<div class="section-description">'
-        'Select a segment to examine its purchasing behavior, '
-        'customer size, and recommended marketing approach.'
-        '</div>',
-
-        unsafe_allow_html=True
+    average_spend = (
+        pd.to_numeric(df[spend_col], errors="coerce").mean()
+        if spend_col else None
     )
 
+    c1, c2, c3, c4 = st.columns(4)
 
-    available_segments = sorted(
-        filtered_df[
-            "Segment"
-        ]
-        .dropna()
-        .unique()
-        .tolist()
+    c1.metric("TOTAL CUSTOMERS", f"{len(df):,}")
+    c2.metric("CUSTOMER SEGMENTS", df["Dashboard Segment"].nunique())
+
+    c3.metric(
+        "AVERAGE SPEND",
+        f"{average_spend:,.2f}"
+        if pd.notna(average_spend) else "N/A"
     )
 
+    c4.metric("CLUSTERING METHOD", "K-Means")
 
-    if available_segments:
+    counts = (
+        df["Dashboard Segment"]
+        .fillna("Unknown")
+        .astype(str)
+        .value_counts()
+        .rename_axis("Segment")
+        .reset_index(name="Customers")
+    )
 
-        selected_segment = st.selectbox(
+    left, right = st.columns([1.25, 1])
 
-            "Select Customer Segment",
-
-            available_segments
-        )
-
-
-        segment_df = filtered_df[
-            filtered_df[
-                "Segment"
-            ]
-            ==
-            selected_segment
-        ]
-
-
-        segment_customers = len(
-            segment_df
-        )
-
-
-        segment_spend = (
-            segment_df[
-                "Total Spend"
-            ].mean()
-        )
-
-
-        segment_items = (
-            segment_df[
-                "Items Purchased"
-            ].mean()
-        )
-
-
-        segment_days = (
-            segment_df[
-                "Days Since Last Purchase"
-            ].mean()
-        )
-
-
-        metric1, metric2, metric3, metric4 = (
-            st.columns(4)
-        )
-
-
-        with metric1:
-
-            st.metric(
-                "Customers",
-                segment_customers
-            )
-
-
-        with metric2:
-
-            st.metric(
-                "Average Spend",
-                f"₹{segment_spend:,.2f}"
-            )
-
-
-        with metric3:
-
-            st.metric(
-                "Average Items",
-                f"{segment_items:.2f}"
-            )
-
-
-        with metric4:
-
-            st.metric(
-                "Days Since Purchase",
-                f"{segment_days:.2f}"
-            )
-
-
-        strategy = (
-            segment_df[
-                "Marketing Strategy"
-            ].iloc[0]
-        )
-
-
-        st.markdown(
-            '<div class="segment-card">'
-
-            f'<div class="segment-name">'
-            f'{selected_segment}'
-            f'</div>'
-
-            '<div class="segment-text">'
-
-            f'<b>Marketing Strategy:</b> '
-            f'{strategy}'
-
-            '</div>'
-
-            '</div>',
-
-            unsafe_allow_html=True
-        )
-
-
+    if len(counts) == 1:
+        only_segment = str(counts.iloc[0]["Segment"])
+        only_count = int(counts.iloc[0]["Customers"])
+        total_count = max(1, int(counts["Customers"].sum()))
+        with left:
+            section("Customer distribution", "Current dataset coverage.")
+            st.markdown(f"""
+            <div class="hover-card overview-summary-card" style="min-height:250px;display:flex;flex-direction:column;justify-content:center;">
+                <div style="color:#52796F;font-size:0.82rem;font-weight:800;letter-spacing:1.5px;">SEGMENT FOUND</div>
+                <div style="color:#263A34;font-size:1.65rem;font-weight:800;margin:10px 0;">{only_segment}</div>
+                <div style="color:#263A34;font-size:2.6rem;font-weight:800;">{only_count:,}</div>
+                <div style="color:#52665E;">customers in the loaded dataset</div>
+            </div>""", unsafe_allow_html=True)
+            st.caption("A segment comparison will appear here when the dataset contains multiple segments.")
+        with right:
+            section("Segment share", "Current segment coverage.")
+            st.markdown(f"""
+            <div class="hover-card overview-summary-card" style="min-height:250px;display:flex;flex-direction:column;justify-content:center;">
+                <div style="color:#52796F;font-size:0.82rem;font-weight:800;letter-spacing:1.5px;">CUSTOMER BASE SHARE</div>
+                <div style="color:#263A34;font-size:3rem;font-weight:800;margin:12px 0;">100%</div>
+                <div style="color:#263A34;font-size:1.1rem;font-weight:700;">{only_segment}</div>
+                <div style="color:#52665E;">{only_count:,} of {total_count:,} customers</div>
+            </div>""", unsafe_allow_html=True)
+            st.caption("The loaded data currently has one segment, so a share chart would only repeat 100%.")
     else:
+        with left:
+            section("Customer distribution", "Compare the number of customers across segments.")
+            fig = px.bar(counts.sort_values("Customers"), x="Customers", y="Segment", orientation="h",
+                         color="Segment", text="Customers", color_discrete_sequence=SEGMENT_COLORS)
+            fig.update_traces(textposition="outside", textfont=dict(color=CREAM, size=12),
+                              marker_line_color=BG, marker_line_width=1)
+            fig.update_layout(showlegend=False, xaxis_title="Number of customers", yaxis_title="",
+                              yaxis=dict(categoryorder="total ascending"))
+            show_chart(fig, max(330, 70 * len(counts) + 100))
+        with right:
+            section("Segment share", "Each segment's percentage of the customer base.")
+            share = counts.copy()
+            share["Share"] = share["Customers"] / max(1, share["Customers"].sum()) * 100
+            ordered = share.sort_values("Share")
+            fig = px.bar(ordered, x="Share", y="Segment", orientation="h", color="Segment",
+                         text=ordered["Share"].map(lambda v: f"{v:.1f}%"), color_discrete_sequence=SEGMENT_COLORS)
+            fig.update_traces(textposition="outside", textfont=dict(color=CREAM, size=11), cliponaxis=False)
+            fig.update_layout(showlegend=False, xaxis_title="Share of customers (%)", yaxis_title="",
+                              xaxis=dict(range=[0, max(105, float(share["Share"].max()) * 1.2)]))
+            show_chart(fig, max(330, 70 * len(counts) + 100))
 
-        st.warning(
-            "No customer segments match the "
-            "current sidebar filters."
-        )
+    if spend_col:
+        section("Customer spending", "See the spread and typical spending level for each segment.")
+        temp = df[["Dashboard Segment", spend_col]].copy()
+        temp[spend_col] = pd.to_numeric(temp[spend_col], errors="coerce")
+        temp = temp.dropna(subset=[spend_col])
+        if not temp.empty:
+            if temp["Dashboard Segment"].nunique() > 1:
+                fig = px.violin(temp, x="Dashboard Segment", y=spend_col, color="Dashboard Segment",
+                                box=True, points="all", color_discrete_sequence=SEGMENT_COLORS)
+                fig.update_traces(meanline_visible=True, jitter=0.25, pointpos=0, marker=dict(size=3, opacity=0.35))
+                fig.update_layout(showlegend=False, xaxis_title="Customer segment", yaxis_title="Total spend")
+                show_chart(fig, 440)
+            else:
+                fig = px.histogram(temp, x=spend_col, nbins=18, marginal="box",
+                                   color_discrete_sequence=["#E8C9B8"])
+                fig.update_traces(marker_line_color=BG, marker_line_width=1)
+                fig.update_layout(xaxis_title="Total spend", yaxis_title="Number of customers", showlegend=False)
+                show_chart(fig, 440)
+                st.caption("Only one segment is present, so this chart shows the spending distribution within that segment instead.")
+        else:
+            st.info("No valid spending values are available for this chart.")
 
 
-# ============================================================
-# TAB 2 — SEGMENT SUMMARY
-# ============================================================
+# =========================================================
+# SEGMENT EXPLORER
+# =========================================================
+elif page == "Segment Explorer":
 
-with tab2:
-
-    st.markdown(
-        '<div class="section-title">'
-        'Segment Summary'
-        '</div>',
-
-        unsafe_allow_html=True
+    section(
+        "Explore customer segments",
+        "Select a segment to view its customer profile and behaviour."
     )
 
-
-    st.markdown(
-        '<div class="section-description">'
-        'Compare the main behavioral characteristics '
-        'of each customer segment.'
-        '</div>',
-
-        unsafe_allow_html=True
+    segments = sorted(
+        df["Dashboard Segment"].dropna().unique()
     )
 
+    selected = st.selectbox(
+        "Choose a customer segment",
+        segments
+    )
 
-    summary = filtered_df.groupby(
-        "Segment"
-    ).agg(
+    segment_df = df[
+        df["Dashboard Segment"] == selected
+    ].copy()
 
-        Customers=(
-            "Customer ID",
-            "count"
-        ),
+    c1, c2, c3 = st.columns(3)
 
-        Avg_Spend=(
-            "Total Spend",
-            "mean"
-        ),
+    c1.metric("CUSTOMERS", len(segment_df))
 
-        Avg_Items=(
-            "Items Purchased",
-            "mean"
-        ),
+    if spend_col:
+        avg_spend = pd.to_numeric(
+            segment_df[spend_col],
+            errors="coerce"
+        ).mean()
 
-        Avg_Rating=(
-            "Average Rating",
-            "mean"
-        ),
+        c2.metric(
+            "AVERAGE SPEND",
+            f"{avg_spend:,.2f}"
+            if pd.notna(avg_spend) else "N/A"
+        )
+    else:
+        c2.metric("AVERAGE SPEND", "N/A")
 
-        Avg_Days=(
-            "Days Since Last Purchase",
-            "mean"
+    if age_col:
+        avg_age = pd.to_numeric(
+            segment_df[age_col],
+            errors="coerce"
+        ).mean()
+
+        c3.metric(
+            "AVERAGE AGE",
+            f"{avg_age:.1f}"
+            if pd.notna(avg_age) else "N/A"
+        )
+    else:
+        c3.metric("AVERAGE AGE", "N/A")
+
+    left, right = st.columns(2)
+
+    with left:
+        section(
+            "Segment profile",
+            "Summary of this customer group."
         )
 
-    ).reset_index()
-
-
-    summary.columns = [
-
-        "Customer Segment",
-
-        "Customers",
-
-        "Average Spend",
-
-        "Average Items",
-
-        "Average Rating",
-
-        "Days Since Purchase"
-    ]
-
-
-    summary[
-        [
-            "Average Spend",
-            "Average Items",
-            "Average Rating",
-            "Days Since Purchase"
+        profile_cols = [
+            col for col in [
+                age_col,
+                spend_col,
+                membership_col,
+                discount_col
+            ]
+            if col is not None
         ]
-    ] = summary[
-        [
-            "Average Spend",
-            "Average Items",
-            "Average Rating",
-            "Days Since Purchase"
-        ]
-    ].round(2)
 
+        if profile_cols:
+            st.dataframe(
+                segment_df[profile_cols].describe(include="all").T,
+                use_container_width=True
+            )
+
+    with right:
+        section(
+            "Membership distribution",
+            "Membership types in this segment."
+        )
+
+        if membership_col:
+            membership_counts = (
+                segment_df[membership_col]
+                .value_counts()
+                .reset_index()
+            )
+
+            membership_counts.columns = [
+                "Membership",
+                "Customers"
+            ]
+
+            if not membership_counts.empty:
+                fig = px.pie(
+                    membership_counts,
+                names="Membership",
+                values="Customers",
+                hole=0.5,
+                    color_discrete_sequence=[GREEN, PEACH, WHEAT, "#8A9A9A"]
+                )
+                fig.update_traces(textinfo="percent+label", textfont=dict(color=BG), marker_line_color=BG, marker_line_width=2)
+                show_chart(fig, 330)
+            else:
+                st.info("No membership values are available for this segment.")
+        else:
+            st.info("Membership column not found.")
+
+    section(
+        "Customers in this segment",
+        "Records belonging to the selected group."
+    )
 
     st.dataframe(
-
-        summary,
-
+        segment_df.drop(
+            columns=["Dashboard Segment"],
+            errors="ignore"
+        ),
         use_container_width=True,
-
         hide_index=True
     )
 
 
-# ============================================================
-# TAB 3 — CUSTOMER DATA
-# ============================================================
+# =========================================================
+# SEGMENT SUMMARY
+# =========================================================
+elif page == "Segment Summary":
 
-with tab3:
-
-    st.markdown(
-        '<div class="section-title">'
-        'Customer Data'
-        '</div>',
-
-        unsafe_allow_html=True
+    section(
+        "Segment summary",
+        "Compare customer groups and their key characteristics."
     )
 
-
-    st.markdown(
-        '<div class="section-description">'
-        'Explore the customer-level records produced '
-        'by the final segmentation model.'
-        '</div>',
-
-        unsafe_allow_html=True
+    summary = (
+        df.groupby("Dashboard Segment")
+        .size()
+        .reset_index(name="Customers")
+        .rename(columns={
+            "Dashboard Segment": "Customer Segment"
+        })
     )
 
+    if spend_col:
+        temp = df.copy()
+        temp["_spend"] = pd.to_numeric(
+            temp[spend_col],
+            errors="coerce"
+        )
 
-    search_customer = st.text_input(
+        spend_summary = (
+            temp.groupby("Dashboard Segment")["_spend"]
+            .mean()
+            .reset_index(name="Average Spend")
+            .rename(columns={
+                "Dashboard Segment": "Customer Segment"
+            })
+        )
 
-        "Search Customer ID",
+        summary = summary.merge(
+            spend_summary,
+            on="Customer Segment"
+        )
 
-        placeholder="Enter Customer ID..."
+    if age_col:
+        temp = df.copy()
+        temp["_age"] = pd.to_numeric(
+            temp[age_col],
+            errors="coerce"
+        )
+
+        age_summary = (
+            temp.groupby("Dashboard Segment")["_age"]
+            .mean()
+            .reset_index(name="Average Age")
+            .rename(columns={
+                "Dashboard Segment": "Customer Segment"
+            })
+        )
+
+        summary = summary.merge(
+            age_summary,
+            on="Customer Segment"
+        )
+
+    st.dataframe(
+        summary,
+        use_container_width=True,
+        hide_index=True
     )
 
+    section(
+        "Personalized marketing strategies",
+        "Suggested approaches based on each customer segment."
+    )
 
-    display_df = filtered_df.copy()
+    for _, row in summary.iterrows():
+        name = row["Customer Segment"]
+
+        st.markdown(
+            f"""
+            <div class="hover-card">
+                <h3>{name}</h3>
+                <p><b>{row['Customers']} customers</b></p>
+                <p>{STRATEGIES.get(name, 'Use personalized offers and relevant recommendations to improve engagement.')}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 
-    if search_customer:
+# =========================================================
+# CUSTOMER DATA
+# =========================================================
+elif page == "Customer Data":
 
-        display_df = display_df[
-            display_df[
-                "Customer ID"
-            ]
-            .astype(str)
-            .str.contains(
-                search_customer,
+    section(
+        "Customer database",
+        "Search, filter, and view customer records."
+    )
+
+    search = st.text_input(
+        "Search customer records",
+        placeholder="Search by customer ID or any value..."
+    )
+
+    filtered_df = df.copy()
+
+    if search:
+        mask = filtered_df.astype(str).apply(
+            lambda col: col.str.contains(
+                search,
                 case=False,
                 na=False
             )
-        ]
+        ).any(axis=1)
 
+        filtered_df = filtered_df[mask]
+
+    segments = sorted(
+        df["Dashboard Segment"].dropna().unique()
+    )
+
+    selected_segments = st.multiselect(
+        "Filter by customer segment",
+        segments,
+        default=segments
+    )
+
+    filtered_df = filtered_df[
+        filtered_df["Dashboard Segment"].isin(selected_segments)
+    ]
+
+    c1, c2 = st.columns(2)
+
+    c1.metric("MATCHING CUSTOMERS", len(filtered_df))
+    c2.metric("TOTAL RECORDS", len(df))
 
     st.dataframe(
-
-        display_df,
-
+        filtered_df.drop(
+            columns=["Dashboard Segment"],
+            errors="ignore"
+        ),
         use_container_width=True,
-
         hide_index=True
     )
 
-
-    csv_data = display_df.to_csv(
-        index=False
-    ).encode(
-        "utf-8"
-    )
-
-
     st.download_button(
-
-        label="⬇ Download Filtered Customer Data",
-
-        data=csv_data,
-
-        file_name=
-        "customer_segments_filtered.csv",
-
+        "Download filtered customer data",
+        data=filtered_df.to_csv(index=False).encode("utf-8"),
+        file_name="filtered_customer_data.csv",
         mime="text/csv"
     )
 
 
-# ============================================================
-# FINAL MODEL INFORMATION
-# ============================================================
+# =========================================================
+# CUSTOMER PREDICTION
+# =========================================================
+elif page == "Customer Prediction":
 
-st.markdown(
-    '<div class="info-card">'
+    section(
+        "Add and predict a customer",
+        "Enter customer details to predict their segment and save the record."
+    )
 
-    '<div class="info-title">'
-    'Final Model Performance'
-    '</div>'
+    if scaler is None or encoder is None or kmeans_model is None:
+        st.error(
+            "Saved model files could not be loaded. "
+            "Check the error above and your files in the models folder."
+        )
+        st.stop()
 
-    '<div class="info-text">'
+    with st.form("customer_prediction_form"):
 
-    'The final K-Means customer segmentation model uses '
-    '<b>Age</b>, <b>Total Spend</b>, '
-    '<b>Membership Type</b>, and '
-    '<b>Discount Applied</b>. Numerical features are '
-    'processed using MinMaxScaler and categorical features '
-    'using OneHotEncoder. The model uses '
+        st.markdown(
+            '<div class="section-subtitle">'
+            'Enter the customer information below.'
+            '</div>',
+            unsafe_allow_html=True
+        )
 
-    f'<b>{FINAL_CLUSTERS}</b> clusters and achieved a '
-    f'Silhouette Score of '
-    f'<b>{FINAL_SILHOUETTE:.6f}</b>.'
+        col1, col2 = st.columns(2)
 
-    '</div>'
+        with col1:
+            customer_name = st.text_input("Customer name")
 
-    '</div>',
+            age = st.number_input(
+                "Age",
+                min_value=1,
+                max_value=100,
+                value=25,
+                step=1
+            )
 
-    unsafe_allow_html=True
-)
+            total_spend = st.number_input(
+                "Total Spend",
+                min_value=0.0,
+                value=500.0,
+                step=50.0
+            )
+
+        with col2:
+            membership = st.selectbox(
+                "Membership Type",
+                list(encoder.categories_[0])
+            )
+
+            discount = st.selectbox(
+                "Discount Applied",
+                list(encoder.categories_[1])
+            )
+
+        submitted = st.form_submit_button(
+            "Predict Customer Segment",
+            use_container_width=True
+        )
+
+    if submitted:
+        customer_input = pd.DataFrame([{
+            "Age": age,
+            "Total Spend": total_spend,
+            "Membership Type": membership,
+            "Discount Applied": discount
+        }])
+
+        try:
+            cluster_id, segment_name = predict_customer(
+                customer_input
+            )
+
+            st.session_state["latest_prediction"] = {
+                "Customer Name": customer_name.strip() or "New Customer",
+                "Age": age,
+                "Total Spend": total_spend,
+                "Membership Type": membership,
+                "Discount Applied": discount,
+                "Predicted Cluster": cluster_id,
+                "Predicted Segment": segment_name
+            }
+
+        except Exception as error:
+            st.error(f"Prediction failed: {error}")
+
+    if "latest_prediction" in st.session_state:
+        result = st.session_state["latest_prediction"]
+
+        st.markdown(
+            f"""
+            <div class="hover-card prediction-card">
+                <p style="color:#C9E4F2;font-weight:800;letter-spacing:2px;">
+                    PREDICTION RESULT
+                </p>
+                <h2 style="color:#F4FAFF;">{result['Predicted Segment']}</h2>
+                <p style="color:#E2F0F8;">
+                    Predicted cluster: {result['Predicted Cluster']}
+                </p>
+                <p style="color:#E2F0F8;">
+                    {STRATEGIES.get(result['Predicted Segment'], '')}
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        if st.button(
+            "Save this customer",
+            use_container_width=True
+        ):
+            saved_record = result.copy()
+
+            saved_record["Saved At"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            saved_record["Record ID"] = str(uuid4())
+            new_row = pd.DataFrame([saved_record])
+
+            if NEW_CUSTOMERS_FILE.exists():
+                existing = pd.read_csv(NEW_CUSTOMERS_FILE)
+                if "Record ID" not in existing.columns:
+                    existing["Record ID"] = [str(uuid4()) for _ in range(len(existing))]
+                updated = pd.concat([existing, new_row], ignore_index=True, sort=False)
+            else:
+                updated = new_row
+
+            updated.to_csv(
+                NEW_CUSTOMERS_FILE,
+                index=False
+            )
+
+            st.success(
+                f"Customer saved successfully to {NEW_CUSTOMERS_FILE.name}."
+            )
+
+    st.write("")
+
+    section(
+        "Previously added customers",
+        "New customer records saved through this page."
+    )
+
+    if NEW_CUSTOMERS_FILE.exists():
+        saved_customers = pd.read_csv(NEW_CUSTOMERS_FILE)
+        if not saved_customers.empty:
+            if "Record ID" not in saved_customers.columns:
+                saved_customers["Record ID"] = [str(uuid4()) for _ in range(len(saved_customers))]
+                saved_customers.to_csv(NEW_CUSTOMERS_FILE, index=False)
+
+            st.dataframe(saved_customers.drop(columns=["Record ID"], errors="ignore"), use_container_width=True, hide_index=True)
+
+            st.markdown("**Select the customer you want to delete**")
+            selected_ids = []
+            for i, row in saved_customers.iterrows():
+                label = (f"{row.get('Customer Name', 'Customer')} — "
+                         f"{row.get('Predicted Segment', 'Unknown')} — "
+                         f"{row.get('Saved At', 'No date')} (record {i + 1})")
+                if st.checkbox(label, key=f"delete_customer_{row['Record ID']}"):
+                    selected_ids.append(str(row["Record ID"]))
+
+            confirm_delete = st.checkbox(
+                "I confirm that I want to permanently delete the selected customer(s).",
+                key="confirm_saved_customer_delete"
+            )
+            if st.button("Delete selected customer(s)", type="secondary",
+                         disabled=(not selected_ids or not confirm_delete),
+                         use_container_width=True):
+                latest = pd.read_csv(NEW_CUSTOMERS_FILE)
+                if "Record ID" not in latest.columns:
+                    st.error("Record identifiers are missing. No data was deleted.")
+                else:
+                    remaining = latest[~latest["Record ID"].astype(str).isin(selected_ids)]
+                    deleted_count = len(latest) - len(remaining)
+                    if deleted_count == 0:
+                        st.warning("Selected record(s) were not found; no data was deleted.")
+                    else:
+                        remaining.to_csv(NEW_CUSTOMERS_FILE, index=False)
+                        st.success(f"Deleted {deleted_count} selected customer record(s).")
+                        st.rerun()
+        else:
+            st.info("No new customers have been saved yet.")
+
+        st.download_button(
+            "Download saved customers",
+            data=saved_customers.drop(columns=["Record ID"], errors="ignore").to_csv(index=False).encode("utf-8"),
+            file_name="new_customers.csv",
+            mime="text/csv"
+        )
+    else:
+        st.info("No new customers have been saved yet.")
 
 
-# ============================================================
+# =========================================================
 # FOOTER
-# ============================================================
-
-st.markdown(
-    '<div class="footer">'
-    'Customer Segmentation & Behavior Analysis • '
-    'K-Means Clustering • '
-    'Data-Driven Marketing Insights'
-    '</div>',
-
-    unsafe_allow_html=True
-)
+# =========================================================
+st.markdown("""
+<hr>
+<p style="text-align:center;color:#DCE8D8;font-size:0.8rem;">
+    Customer Segmentation Dashboard
+</p>
+""", unsafe_allow_html=True)
