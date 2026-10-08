@@ -34,16 +34,19 @@ MODEL_FILE = MODEL_DIR / "kmeans_model.pkl"
 DATA_DIR.mkdir(exist_ok=True)
 
 # =========================================================
-# COLORS
+# COLORS  —  EarthGuard-inspired eco-dark palette
 # =========================================================
-BG = "#304840"
-CREAM = "#F7F4EA"
-WHITE = "#FFFFFF"
-SAGE = "#DCE8D8"
-GREEN = "#52796F"
-PEACH = "#E8C9B8"
-WHEAT = "#E8DFAF"
-TEXT = "#263A34"
+BG          = "#0b191e"
+SURFACE     = "#0f2027"
+CARD_BG     = "rgba(255,255,255,0.04)"
+GREEN       = "#86d028"          # brand accent
+GREEN_DARK  = "#5a9216"
+CREAM       = "#f0f4f8"
+SAGE        = "#b2cfc4"
+PEACH       = "#d9917a"
+WHEAT       = "#c9b87c"
+TEXT        = "#e8f1ec"
+MUTED       = "rgba(255,255,255,0.55)"
 
 SEGMENT_NAMES = {
     0: "Bronze Regular Customers",
@@ -56,13 +59,13 @@ SEGMENT_NAMES = {
 }
 
 SEGMENT_COLORS = [
-    "#52796F",
-    "#E8C9B8",
-    "#E8DFAF",
-    "#8A9A9A",
-    "#D18A76",
-    "#B98261",
-    "#6F9388"
+    "#86d028",   # brand green
+    "#d9917a",   # peach
+    "#c9b87c",   # wheat
+    "#5a9216",   # dark green
+    "#4aa3a2",   # teal
+    "#8b6fae",   # violet
+    "#3a8fb5",   # blue
 ]
 
 STRATEGIES = {
@@ -83,288 +86,479 @@ STRATEGIES = {
 }
 
 # =========================================================
-# CSS
+# CSS  —  EarthGuard premium design system
 # =========================================================
 st.markdown("""
 <style>
-:root {
-    --forest: #304840;
-    --cream: #F7F4EA;
-    --sage: #DCE8D8;
-    --green: #52796F;
-    --peach: #E8C9B8;
-    --wheat: #E8DFAF;
-}
+/* ── Google Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@1&display=swap');
 
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── App shell ── */
 .stApp,
 [data-testid="stAppViewContainer"],
 [data-testid="stMain"],
 [data-testid="stHeader"] {
-    background: var(--forest) !important;
+    background: #0b191e !important;
+    color: #e8f1ec !important;
 }
 
-/* Soft botanical texture without affecting content contrast */
+/* Atmospheric multi-layer gradient — mirrors the EarthGuard video overlay */
 .stApp {
     background-image:
-        radial-gradient(ellipse at 8% 8%, rgba(111,147,136,0.16) 0, rgba(111,147,136,0.05) 19%, transparent 38%),
-        radial-gradient(ellipse at 92% 22%, rgba(220,232,216,0.10) 0, transparent 28%),
-        radial-gradient(ellipse at 75% 92%, rgba(82,121,111,0.20) 0, transparent 34%),
-        linear-gradient(135deg, #304840 0%, #2B4139 55%, #304840 100%) !important;
+        radial-gradient(ellipse at 18% 12%, rgba(134,208,40,0.08) 0, transparent 40%),
+        radial-gradient(ellipse at 85% 8%,  rgba(74,163,162,0.06) 0, transparent 30%),
+        radial-gradient(ellipse at 60% 90%, rgba(134,208,40,0.10) 0, transparent 38%),
+        linear-gradient(160deg, #0b191e 0%, #0f2027 50%, #0b191e 100%) !important;
     background-attachment: fixed !important;
 }
 
-.block-container {
-    max-width: 1500px;
-    padding-top: 3.5rem !important;
-    padding-bottom: 3rem;
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0b191e; }
+::-webkit-scrollbar-thumb { background: rgba(134,208,40,0.35); border-radius: 3px; }
+
+/* ── Typography ── */
+h1, h2, h3, h4 {
+    font-family: 'Syne', sans-serif !important;
+    color: #f0f4f8 !important;
+}
+p, span, div, label {
+    font-family: 'Space Grotesk', sans-serif !important;
 }
 
-/* Header */
+/* ── Block container ── */
+.block-container {
+    max-width: 1480px !important;
+    padding-top: 3.8rem !important;
+    padding-bottom: 3.5rem !important;
+}
+
+/* ── HERO HEADER ── */
 .eyebrow {
-    color: var(--sage) !important;
-    font-size: 0.78rem !important;
-    font-weight: 800 !important;
-    letter-spacing: 3px !important;
-    line-height: 1.8 !important;
-    padding-top: 8px !important;
-    margin-top: 8px !important;
-    margin-bottom: 14px !important;
-    overflow: visible !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #86d028 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 4px !important;
+    text-transform: uppercase;
+    margin-bottom: 10px !important;
+}
+.eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 28px;
+    height: 2px;
+    background: #86d028;
+    border-radius: 2px;
+    flex-shrink: 0;
 }
 
 .hero-title {
-    color: var(--cream) !important;
-    font-size: 2.65rem !important;
+    font-family: 'Syne', sans-serif !important;
+    color: #f0f4f8 !important;
+    font-size: 2.9rem !important;
     font-weight: 800 !important;
-    line-height: 1.25 !important;
-    margin: 0 0 10px 0 !important;
-    padding: 0 !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.5px !important;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.55) !important;
+    margin: 0 0 8px 0 !important;
+}
+
+.hero-italic {
+    font-family: 'Instrument Serif', serif !important;
+    font-style: italic !important;
+    color: #86d028 !important;
+    font-size: 3.1rem !important;
+    text-shadow: 0 0 28px rgba(134,208,40,0.4) !important;
+    display: block;
+    margin-top: 2px;
 }
 
 .hero-subtitle {
-    color: var(--sage) !important;
+    color: rgba(255,255,255,0.62) !important;
     font-size: 1rem !important;
-    line-height: 1.6 !important;
-    margin-bottom: 26px !important;
+    line-height: 1.7 !important;
+    max-width: 540px;
+    margin-bottom: 28px !important;
 }
 
-/* General text */
-h1, h2, h3, h4, p {
-    color: var(--cream);
-}
-
+/* ── Section headings ── */
 .section-title {
-    color: var(--cream) !important;
-    font-size: 1.35rem;
-    font-weight: 750;
-    margin-top: 20px;
-    margin-bottom: 4px;
+    font-family: 'Syne', sans-serif !important;
+    color: #f0f4f8 !important;
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    margin-top: 24px;
+    margin-bottom: 3px;
+    letter-spacing: -0.2px;
 }
 
 .section-subtitle {
-    color: var(--sage) !important;
-    font-size: 0.9rem;
-    margin-bottom: 18px;
+    color: rgba(255,255,255,0.50) !important;
+    font-size: 0.875rem !important;
+    margin-bottom: 16px;
 }
 
-/* Navigation */
+/* ── NAVIGATION — glass pill ── */
 div[role="radiogroup"] {
-    background: var(--cream) !important;
-    padding: 8px !important;
-    border-radius: 14px !important;
-    gap: 8px !important;
-    width: fit-content;
+    background: rgba(255,255,255,0.06) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 50px !important;
+    padding: 6px 8px !important;
+    gap: 4px !important;
+    width: fit-content !important;
 }
 
 div[role="radiogroup"] label {
-    color: var(--forest) !important;
     background: transparent !important;
-    border-radius: 10px !important;
-    padding: 9px 16px !important;
-    opacity: 1 !important;
+    border-radius: 50px !important;
+    padding: 8px 20px !important;
+    transition: all 0.25s ease !important;
 }
 
 div[role="radiogroup"] label p,
 div[role="radiogroup"] label span,
 div[role="radiogroup"] label div {
-    color: var(--forest) !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.2px !important;
+    text-transform: uppercase !important;
+    color: rgba(255,255,255,0.65) !important;
     opacity: 1 !important;
-    font-weight: 650 !important;
 }
 
 div[role="radiogroup"] label:has(input:checked) {
-    background: var(--sage) !important;
+    background: #86d028 !important;
+    box-shadow: 0 0 18px rgba(134,208,40,0.38) !important;
+}
+div[role="radiogroup"] label:has(input:checked) p,
+div[role="radiogroup"] label:has(input:checked) span,
+div[role="radiogroup"] label:has(input:checked) div {
+    color: #0b191e !important;
 }
 
-div[role="radiogroup"] label {
-    transition: box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease !important;
+div[role="radiogroup"] label:hover:not(:has(input:checked)) {
+    background: rgba(134,208,40,0.12) !important;
 }
-div[role="radiogroup"] label:hover {
-    background: #EAF1E7 !important;
-    box-shadow: 0 0 0 1px rgba(232,201,184,0.18), 0 0 16px rgba(232,137,91,0.18) !important;
-    transform: translateY(-1px);
-}
-
-/* Hover effects */
-[data-testid="stMetric"],
-.hover-card,
-[data-testid="stDataFrame"],
-div[data-testid="stPlotlyChart"] {
-    transition:
-        transform 0.22s ease,
-        box-shadow 0.22s ease,
-        border-color 0.22s ease !important;
+div[role="radiogroup"] label:hover:not(:has(input:checked)) p,
+div[role="radiogroup"] label:hover:not(:has(input:checked)) span,
+div[role="radiogroup"] label:hover:not(:has(input:checked)) div {
+    color: #86d028 !important;
 }
 
-[data-testid="stMetric"]:hover,
-.hover-card:hover {
-    transform: translateY(-6px);
-    box-shadow:
-        0 12px 28px rgba(0,0,0,0.24),
-        0 0 0 1px rgba(232,137,91,0.32),
-        0 0 24px rgba(232,137,91,0.28) !important;
-    border-color: rgba(232,137,91,0.62) !important;
-}
-
-div[data-testid="stPlotlyChart"]:hover,
-[data-testid="stDataFrame"]:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-}
-
-/* Metric cards */
+/* ── METRIC CARDS — glass morphism ── */
 [data-testid="stMetric"] {
-    background: var(--cream) !important;
-    border: 1px solid rgba(220,232,216,0.45) !important;
-    border-radius: 17px !important;
-    padding: 22px !important;
-    min-height: 125px;
+    background: rgba(255,255,255,0.04) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 18px !important;
+    padding: 24px 22px !important;
+    min-height: 120px !important;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
 }
 
-[data-testid="stMetric"] * {
-    color: var(--forest) !important;
-    opacity: 1 !important;
+[data-testid="stMetric"]:hover {
+    transform: translateY(-5px) !important;
+    border-color: rgba(134,208,40,0.40) !important;
+    box-shadow:
+        0 12px 32px rgba(0,0,0,0.35),
+        0 0 0 1px rgba(134,208,40,0.25),
+        0 0 24px rgba(134,208,40,0.15) !important;
 }
 
 [data-testid="stMetricLabel"] {
-    font-weight: 750 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 0.70rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 2.5px !important;
+    text-transform: uppercase !important;
+    color: #86d028 !important;
+    opacity: 1 !important;
 }
 
-/* Custom cards */
-.hover-card {
-    background: var(--cream);
-    border: 1px solid rgba(220,232,216,0.4);
-    border-radius: 16px;
-    padding: 20px;
+[data-testid="stMetricValue"] {
+    font-family: 'Syne', sans-serif !important;
+    font-size: 1.9rem !important;
+    font-weight: 800 !important;
+    color: #f0f4f8 !important;
+    opacity: 1 !important;
+}
+
+[data-testid="stMetric"] * { opacity: 1 !important; }
+
+/* ── GLASS CARDS ── */
+.glass-card {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 18px;
+    padding: 24px;
     margin-bottom: 14px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+.glass-card:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(134,208,40,0.35);
+    transform: translateY(-4px);
+    box-shadow: 0 14px 36px rgba(0,0,0,0.30), 0 0 24px rgba(134,208,40,0.10);
+}
+.glass-card h3 {
+    font-family: 'Syne', sans-serif !important;
+    color: #f0f4f8 !important;
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+    margin: 0 0 6px 0 !important;
+}
+.glass-card p {
+    color: rgba(255,255,255,0.65) !important;
+    font-size: 0.9rem !important;
+    line-height: 1.65 !important;
+    margin: 0 !important;
+}
+.glass-card .card-count {
+    font-family: 'Syne', sans-serif !important;
+    color: #86d028 !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.5px !important;
+    text-transform: uppercase !important;
+    margin-bottom: 10px !important;
+    display: block;
+}
+.glass-card .card-tag {
+    display: inline-block;
+    background: rgba(134,208,40,0.12);
+    border: 1px solid rgba(134,208,40,0.25);
+    color: #86d028 !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-radius: 50px;
+    padding: 3px 12px;
+    margin-top: 12px;
 }
 
-.hover-card h3,
-.hover-card p {
-    color: var(--forest) !important;
-}
-
-/* Translucent dark-blue cards for the one-segment overview state */
-.overview-summary-card {
-    background: linear-gradient(135deg, rgba(20, 48, 73, 0.88), rgba(31, 65, 91, 0.78)) !important;
-    border: 1px solid rgba(164, 198, 219, 0.38) !important;
-    backdrop-filter: blur(9px);
-    -webkit-backdrop-filter: blur(9px);
-}
-.overview-summary-card,
-.overview-summary-card div {
-    color: #F7F4EA !important;
-}
+/* Prediction result card */
 .prediction-card {
-    background: linear-gradient(135deg, rgba(24,54,78,0.86), rgba(20,43,65,0.86)) !important;
-    border: 1px solid rgba(150,190,215,0.32) !important;
-    backdrop-filter: blur(8px);
+    background: linear-gradient(135deg, rgba(15,48,62,0.92), rgba(10,30,40,0.92)) !important;
+    border: 1px solid rgba(134,208,40,0.30) !important;
+    border-radius: 18px !important;
+    padding: 28px !important;
+    backdrop-filter: blur(16px) !important;
+    box-shadow: 0 0 40px rgba(134,208,40,0.08) !important;
 }
-.prediction-card h2, .prediction-card p { color: #F4FAFF !important; }
+.prediction-card .pred-label {
+    color: #86d028 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 0.70rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 3px !important;
+    text-transform: uppercase !important;
+    margin-bottom: 10px !important;
+    display: block;
+}
+.prediction-card h2 {
+    font-family: 'Syne', sans-serif !important;
+    color: #f0f4f8 !important;
+    font-size: 1.75rem !important;
+    font-weight: 800 !important;
+    margin: 0 0 8px 0 !important;
+    text-shadow: 0 0 20px rgba(134,208,40,0.20) !important;
+}
+.prediction-card .pred-cluster {
+    color: rgba(255,255,255,0.55) !important;
+    font-size: 0.88rem !important;
+}
+.prediction-card .pred-strategy {
+    color: rgba(255,255,255,0.75) !important;
+    font-size: 0.93rem !important;
+    line-height: 1.65 !important;
+    margin-top: 12px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+}
 
-/* Inputs */
+/* ── INPUTS ── */
 .stTextInput label,
 .stNumberInput label,
 .stSelectbox label,
 .stMultiSelect label,
 .stSlider label {
-    color: var(--cream) !important;
-}
-[data-testid="stMultiSelect"] [data-baseweb="tag"] span,
-[data-testid="stMultiSelect"] [data-baseweb="tag"] svg {
-    color: var(--forest) !important;
-}
-[data-testid="stMultiSelect"] [data-baseweb="select"] input {
-    color: var(--forest) !important;
-}
-[data-testid="stMultiSelect"] [data-baseweb="select"] div {
-    color: var(--forest);
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.5px !important;
+    text-transform: uppercase !important;
+    color: rgba(255,255,255,0.65) !important;
 }
 
 .stTextInput input,
 .stNumberInput input,
 .stSelectbox div[data-baseweb="select"] > div,
 .stMultiSelect div[data-baseweb="select"] > div {
-    background: var(--cream) !important;
-    color: var(--forest) !important;
-    border-radius: 10px !important;
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 12px !important;
+    color: #f0f4f8 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+.stTextInput input:focus,
+.stNumberInput input:focus {
+    border-color: rgba(134,208,40,0.55) !important;
+    box-shadow: 0 0 0 3px rgba(134,208,40,0.12) !important;
 }
 
-/* Buttons */
+[data-testid="stMultiSelect"] [data-baseweb="tag"] {
+    background: rgba(134,208,40,0.15) !important;
+    border: 1px solid rgba(134,208,40,0.30) !important;
+}
+[data-testid="stMultiSelect"] [data-baseweb="tag"] span,
+[data-testid="stMultiSelect"] [data-baseweb="tag"] svg {
+    color: #86d028 !important;
+}
+
+/* ── BUTTONS ── */
 .stButton button,
 .stDownloadButton button {
-    background: #1E302B !important;
-    color: var(--cream) !important;
-    border: 1px solid rgba(220,232,216,0.28) !important;
-    border-radius: 10px !important;
+    font-family: 'Space Grotesk', sans-serif !important;
     font-weight: 700 !important;
-    transition: all 0.2s ease !important;
+    font-size: 0.78rem !important;
+    letter-spacing: 1.5px !important;
+    text-transform: uppercase !important;
+    background: rgba(255,255,255,0.06) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    border-radius: 50px !important;
+    color: #f0f4f8 !important;
+    padding: 10px 24px !important;
+    transition: all 0.25s ease !important;
 }
-
 .stButton button:hover,
 .stDownloadButton button:hover {
-    background: #263D35 !important;
-    color: var(--cream) !important;
-    transform: translateY(-1px);
-    box-shadow: 0 0 0 1px rgba(232,201,184,0.14), 0 0 11px rgba(232,137,91,0.16);
+    background: rgba(134,208,40,0.14) !important;
+    border-color: rgba(134,208,40,0.55) !important;
+    color: #86d028 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 0 20px rgba(134,208,40,0.18) !important;
+}
+/* Primary form submit */
+.stButton button[kind="primaryFormSubmit"],
+div[data-testid="stForm"] .stButton button {
+    background: #86d028 !important;
+    color: #0b191e !important;
+    border-color: #86d028 !important;
+    box-shadow: 0 4px 18px rgba(134,208,40,0.30) !important;
+}
+div[data-testid="stForm"] .stButton button:hover {
+    background: #76b821 !important;
+    border-color: #76b821 !important;
+    color: #0b191e !important;
+    box-shadow: 0 6px 26px rgba(134,208,40,0.45) !important;
 }
 
-/* Tables */
+/* ── DATAFRAME / TABLE ── */
 [data-testid="stDataFrame"] {
-    background: var(--cream) !important;
-    border-radius: 12px;
-    padding: 8px;
+    background: rgba(255,255,255,0.03) !important;
+    border: 1px solid rgba(255,255,255,0.09) !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    transition: transform 0.22s ease, box-shadow 0.22s ease !important;
+}
+[data-testid="stDataFrame"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 26px rgba(0,0,0,0.22);
 }
 
-[data-testid="stCaptionContainer"] {
-    color: var(--sage) !important;
-}
-
-/* Selectable tags / chips */
-[data-baseweb="tag"] {
-    background: #DCE8D8 !important;
-    border: 1px solid #8EAD9B !important;
-    transition: box-shadow 0.2s ease, filter 0.2s ease !important;
-}
-[data-baseweb="tag"]:hover {
-    box-shadow: 0 0 14px rgba(232,137,91,0.18) !important;
-    filter: brightness(1.04);
-}
-
+/* ── CHARTS ── */
 [data-testid="stPlotlyChart"] {
-    border: 1px solid rgba(220,232,216,0.18);
-    border-radius: 14px;
-    padding: 5px;
+    background: rgba(255,255,255,0.02) !important;
+    border: 1px solid rgba(255,255,255,0.07) !important;
+    border-radius: 16px !important;
+    padding: 6px !important;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease !important;
+}
+[data-testid="stPlotlyChart"]:hover {
+    transform: translateY(-3px);
+    border-color: rgba(134,208,40,0.22) !important;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.22), 0 0 20px rgba(134,208,40,0.06);
 }
 
+/* ── CAPTION ── */
+[data-testid="stCaptionContainer"] {
+    color: rgba(255,255,255,0.40) !important;
+    font-size: 0.78rem !important;
+}
 
+/* ── ALERTS / INFO ── */
+.stAlert {
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    border-radius: 12px !important;
+    color: #e8f1ec !important;
+}
+
+/* ── DIVIDER ── */
 hr {
-    border-color: rgba(220,232,216,0.3) !important;
+    border-color: rgba(255,255,255,0.08) !important;
+    margin: 28px 0 !important;
 }
 
-footer {
-    visibility: hidden;
+/* ── CHECKBOX ── */
+.stCheckbox label {
+    color: rgba(255,255,255,0.70) !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 0.88rem !important;
 }
+
+/* ── OVERVIEW stat chip ── */
+.stat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(134,208,40,0.10);
+    border: 1px solid rgba(134,208,40,0.22);
+    border-radius: 50px;
+    padding: 5px 14px 5px 10px;
+    color: #86d028 !important;
+    font-family: 'Space Grotesk', sans-serif !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    width: fit-content;
+    margin-bottom: 18px;
+}
+.stat-chip::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #86d028;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(134,208,40,0.6);
+    animation: pulse-dot 2.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.6; transform: scale(0.75); }
+}
+
+/* Hide Streamlit branding */
+footer { visibility: hidden; }
+#MainMenu { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -380,27 +574,20 @@ def load_data():
 
 
 # =========================================================
-# LOAD SAVED MODELS - JOBLIB FIX
+# LOAD SAVED MODELS
 # =========================================================
 @st.cache_resource
 def load_models():
     required_files = [SCALER_FILE, ENCODER_FILE, MODEL_FILE]
-
-    missing_files = [
-        str(path) for path in required_files if not path.exists()
-    ]
-
+    missing_files = [str(p) for p in required_files if not p.exists()]
     if missing_files:
         st.error("Missing model files: " + ", ".join(missing_files))
         return None, None, None
-
     try:
-        scaler = joblib.load(SCALER_FILE)
+        scaler  = joblib.load(SCALER_FILE)
         encoder = joblib.load(ENCODER_FILE)
-        model = joblib.load(MODEL_FILE)
-
+        model   = joblib.load(MODEL_FILE)
         return scaler, encoder, model
-
     except Exception as error:
         st.error(f"Could not load saved models: {error}")
         return None, None, None
@@ -419,28 +606,20 @@ if df.empty:
 # =========================================================
 # FEATURE COLUMNS
 # =========================================================
-NUMERIC_FEATURES = ["Age", "Total Spend"]
+NUMERIC_FEATURES     = ["Age", "Total Spend"]
 CATEGORICAL_FEATURES = ["Membership Type", "Discount Applied"]
 
 
 def prepare_customer_features(customer_df):
-    numeric_data = customer_df[NUMERIC_FEATURES].copy()
-    categorical_data = customer_df[CATEGORICAL_FEATURES].copy()
-
-    numeric_scaled = scaler.transform(numeric_data)
-    categorical_encoded = encoder.transform(categorical_data)
-
-    return np.concatenate(
-        [numeric_scaled, categorical_encoded],
-        axis=1
-    )
+    numeric_scaled      = scaler.transform(customer_df[NUMERIC_FEATURES].copy())
+    categorical_encoded = encoder.transform(customer_df[CATEGORICAL_FEATURES].copy())
+    return np.concatenate([numeric_scaled, categorical_encoded], axis=1)
 
 
 def predict_customer(customer_df):
-    features = prepare_customer_features(customer_df)
-    cluster_id = int(kmeans_model.predict(features)[0])
+    features     = prepare_customer_features(customer_df)
+    cluster_id   = int(kmeans_model.predict(features)[0])
     segment_name = SEGMENT_NAMES.get(cluster_id, f"Segment {cluster_id}")
-
     return cluster_id, segment_name
 
 
@@ -448,39 +627,27 @@ def predict_customer(customer_df):
 # FIND COLUMNS
 # =========================================================
 def find_column(names):
-    lookup = {
-        str(col).strip().lower(): col
-        for col in df.columns
-    }
-
+    lookup = {str(col).strip().lower(): col for col in df.columns}
     for name in names:
         if name.lower() in lookup:
             return lookup[name.lower()]
-
     for col in df.columns:
         for name in names:
             if name.lower() in str(col).lower():
                 return col
-
     return None
 
 
-segment_col = find_column([
-    "Segment Name", "Segment", "Cluster Name",
-    "Cluster", "Customer Segment"
-])
-
-spend_col = find_column(["Total Spend", "Total_Spend", "Spend"])
-age_col = find_column(["Age", "Customer Age"])
+segment_col    = find_column(["Segment Name", "Segment", "Cluster Name", "Cluster", "Customer Segment"])
+spend_col      = find_column(["Total Spend", "Total_Spend", "Spend"])
+age_col        = find_column(["Age", "Customer Age"])
 membership_col = find_column(["Membership Type", "Membership_Type"])
-discount_col = find_column(["Discount Applied", "Discount_Applied"])
-
+discount_col   = find_column(["Discount Applied", "Discount_Applied"])
 
 if segment_col:
     if pd.api.types.is_numeric_dtype(df[segment_col]):
         df["Dashboard Segment"] = df[segment_col].map(
-            lambda x: SEGMENT_NAMES.get(int(x), f"Segment {x}")
-            if pd.notna(x) else "Unknown"
+            lambda x: SEGMENT_NAMES.get(int(x), f"Segment {x}") if pd.notna(x) else "Unknown"
         )
     else:
         df["Dashboard Segment"] = df[segment_col].astype(str)
@@ -491,10 +658,13 @@ else:
 # =========================================================
 # HELPERS
 # =========================================================
-def section(title, subtitle):
+def section(title, subtitle=""):
+    subtitle_html = (
+        f'<div class="section-subtitle">{subtitle}</div>'
+        if subtitle else ""
+    )
     st.markdown(
-        f'<div class="section-title">{title}</div>'
-        f'<div class="section-subtitle">{subtitle}</div>',
+        f'<div class="section-title">{title}</div>{subtitle_html}',
         unsafe_allow_html=True
     )
 
@@ -504,17 +674,14 @@ def style_chart(fig, height=370):
         height=height,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color=CREAM, family="Arial"),
-        margin=dict(l=20, r=20, t=25, b=25),
-        legend=dict(font=dict(color=CREAM)),
-        xaxis=dict(
-            color=CREAM,
-            gridcolor="rgba(220,232,216,0.15)"
+        font=dict(color="rgba(255,255,255,0.75)", family="Space Grotesk"),
+        margin=dict(l=20, r=20, t=30, b=30),
+        legend=dict(
+            font=dict(color="rgba(255,255,255,0.70)"),
+            bgcolor="rgba(0,0,0,0)"
         ),
-        yaxis=dict(
-            color=CREAM,
-            gridcolor="rgba(220,232,216,0.15)"
-        )
+        xaxis=dict(color="rgba(255,255,255,0.60)", gridcolor="rgba(255,255,255,0.07)", zeroline=False),
+        yaxis=dict(color="rgba(255,255,255,0.60)", gridcolor="rgba(255,255,255,0.07)", zeroline=False),
     )
     return fig
 
@@ -533,36 +700,36 @@ def safe_numeric(series):
 
 
 # =========================================================
-# HEADER
+# HERO HEADER
 # =========================================================
 st.markdown(
-    '<div class="eyebrow">CUSTOMER INSIGHTS</div>',
+    '<div class="eyebrow">CUSTOMER INSIGHTS PLATFORM</div>',
     unsafe_allow_html=True
 )
-
 st.markdown(
-    '<div class="hero-title">Customer Segmentation</div>',
+    '<div class="hero-title">Customer Segmentation'
+    '<span class="hero-italic">Intelligence.</span>'
+    '</div>',
     unsafe_allow_html=True
 )
-
 st.markdown(
     '<div class="hero-subtitle">'
     'Understand customer behaviour and discover meaningful groups '
-    'for personalized marketing.'
+    'for personalized, high-impact marketing.'
     '</div>',
     unsafe_allow_html=True
 )
 
 
 # =========================================================
-# NAVIGATION
+# NAVIGATION  —  glass pill bar
 # =========================================================
 pages = [
     "Overview",
     "Segment Explorer",
     "Segment Summary",
     "Customer Data",
-    "Customer Prediction"
+    "Customer Prediction",
 ]
 
 page = st.radio(
@@ -576,13 +743,13 @@ st.write("")
 
 
 # =========================================================
-# OVERVIEW
+# ██████  OVERVIEW
 # =========================================================
 if page == "Overview":
 
     section(
-        "Project overview",
-        "A quick view of customer groups and overall spending."
+        "Project Overview",
+        "A high-level look at customer groups and overall spending patterns."
     )
 
     average_spend = (
@@ -591,16 +758,12 @@ if page == "Overview":
     )
 
     c1, c2, c3, c4 = st.columns(4)
-
-    c1.metric("TOTAL CUSTOMERS", f"{len(df):,}")
+    c1.metric("TOTAL CUSTOMERS",   f"{len(df):,}")
     c2.metric("CUSTOMER SEGMENTS", df["Dashboard Segment"].nunique())
-
     c3.metric(
         "AVERAGE SPEND",
-        f"{average_spend:,.2f}"
-        if pd.notna(average_spend) else "N/A"
+        f"{average_spend:,.2f}" if pd.notna(average_spend) else "N/A"
     )
-
     c4.metric("CLUSTERING METHOD", "K-Means")
 
     counts = (
@@ -616,146 +779,153 @@ if page == "Overview":
 
     if len(counts) == 1:
         only_segment = str(counts.iloc[0]["Segment"])
-        only_count = int(counts.iloc[0]["Customers"])
-        total_count = max(1, int(counts["Customers"].sum()))
+        only_count   = int(counts.iloc[0]["Customers"])
+        total_count  = max(1, int(counts["Customers"].sum()))
+
         with left:
             section("Customer distribution", "Current dataset coverage.")
             st.markdown(f"""
-            <div class="hover-card overview-summary-card" style="min-height:250px;display:flex;flex-direction:column;justify-content:center;">
-                <div style="color:#52796F;font-size:0.82rem;font-weight:800;letter-spacing:1.5px;">SEGMENT FOUND</div>
-                <div style="color:#263A34;font-size:1.65rem;font-weight:800;margin:10px 0;">{only_segment}</div>
-                <div style="color:#263A34;font-size:2.6rem;font-weight:800;">{only_count:,}</div>
-                <div style="color:#52665E;">customers in the loaded dataset</div>
+            <div class="glass-card" style="min-height:240px;display:flex;flex-direction:column;justify-content:center;gap:8px;">
+                <div class="stat-chip">Segment found</div>
+                <div style="font-family:'Syne',sans-serif;color:#f0f4f8;font-size:1.55rem;font-weight:800;">{only_segment}</div>
+                <div style="font-family:'Syne',sans-serif;color:#86d028;font-size:2.8rem;font-weight:800;line-height:1;">{only_count:,}</div>
+                <div style="color:rgba(255,255,255,0.50);font-size:0.88rem;">customers in the loaded dataset</div>
             </div>""", unsafe_allow_html=True)
             st.caption("A segment comparison will appear here when the dataset contains multiple segments.")
+
         with right:
             section("Segment share", "Current segment coverage.")
             st.markdown(f"""
-            <div class="hover-card overview-summary-card" style="min-height:250px;display:flex;flex-direction:column;justify-content:center;">
-                <div style="color:#52796F;font-size:0.82rem;font-weight:800;letter-spacing:1.5px;">CUSTOMER BASE SHARE</div>
-                <div style="color:#263A34;font-size:3rem;font-weight:800;margin:12px 0;">100%</div>
-                <div style="color:#263A34;font-size:1.1rem;font-weight:700;">{only_segment}</div>
-                <div style="color:#52665E;">{only_count:,} of {total_count:,} customers</div>
+            <div class="glass-card" style="min-height:240px;display:flex;flex-direction:column;justify-content:center;gap:8px;">
+                <div class="stat-chip">Customer base share</div>
+                <div style="font-family:'Syne',sans-serif;color:#86d028;font-size:3.2rem;font-weight:800;line-height:1;text-shadow:0 0 28px rgba(134,208,40,0.35);">100%</div>
+                <div style="font-family:'Syne',sans-serif;color:#f0f4f8;font-size:1.1rem;font-weight:800;">{only_segment}</div>
+                <div style="color:rgba(255,255,255,0.50);font-size:0.88rem;">{only_count:,} of {total_count:,} customers</div>
             </div>""", unsafe_allow_html=True)
-            st.caption("The loaded data currently has one segment, so a share chart would only repeat 100%.")
+            st.caption("The loaded data has one segment — share would only repeat 100%.")
     else:
         with left:
             section("Customer distribution", "Compare the number of customers across segments.")
-            fig = px.bar(counts.sort_values("Customers"), x="Customers", y="Segment", orientation="h",
-                         color="Segment", text="Customers", color_discrete_sequence=SEGMENT_COLORS)
-            fig.update_traces(textposition="outside", textfont=dict(color=CREAM, size=12),
-                              marker_line_color=BG, marker_line_width=1)
-            fig.update_layout(showlegend=False, xaxis_title="Number of customers", yaxis_title="",
-                              yaxis=dict(categoryorder="total ascending"))
+            fig = px.bar(
+                counts.sort_values("Customers"),
+                x="Customers", y="Segment", orientation="h",
+                color="Segment", text="Customers",
+                color_discrete_sequence=SEGMENT_COLORS
+            )
+            fig.update_traces(
+                textposition="outside",
+                textfont=dict(color="rgba(255,255,255,0.80)", size=11),
+                marker_line_color="rgba(0,0,0,0)", marker_line_width=0,
+                marker_opacity=0.88
+            )
+            fig.update_layout(
+                showlegend=False,
+                xaxis_title="Number of customers",
+                yaxis_title="",
+                yaxis=dict(categoryorder="total ascending")
+            )
             show_chart(fig, max(330, 70 * len(counts) + 100))
+
         with right:
             section("Segment share", "Each segment's percentage of the customer base.")
             share = counts.copy()
             share["Share"] = share["Customers"] / max(1, share["Customers"].sum()) * 100
             ordered = share.sort_values("Share")
-            fig = px.bar(ordered, x="Share", y="Segment", orientation="h", color="Segment",
-                         text=ordered["Share"].map(lambda v: f"{v:.1f}%"), color_discrete_sequence=SEGMENT_COLORS)
-            fig.update_traces(textposition="outside", textfont=dict(color=CREAM, size=11), cliponaxis=False)
-            fig.update_layout(showlegend=False, xaxis_title="Share of customers (%)", yaxis_title="",
-                              xaxis=dict(range=[0, max(105, float(share["Share"].max()) * 1.2)]))
+            fig = px.bar(
+                ordered, x="Share", y="Segment", orientation="h",
+                color="Segment",
+                text=ordered["Share"].map(lambda v: f"{v:.1f}%"),
+                color_discrete_sequence=SEGMENT_COLORS
+            )
+            fig.update_traces(
+                textposition="outside",
+                textfont=dict(color="rgba(255,255,255,0.80)", size=11),
+                cliponaxis=False,
+                marker_opacity=0.88
+            )
+            fig.update_layout(
+                showlegend=False,
+                xaxis_title="Share of customers (%)",
+                yaxis_title="",
+                xaxis=dict(range=[0, max(105, float(share["Share"].max()) * 1.2)])
+            )
             show_chart(fig, max(330, 70 * len(counts) + 100))
 
     if spend_col:
-        section("Customer spending", "See the spread and typical spending level for each segment.")
+        section("Customer spending", "The spread and typical spending level for each segment.")
         temp = df[["Dashboard Segment", spend_col]].copy()
         temp[spend_col] = pd.to_numeric(temp[spend_col], errors="coerce")
         temp = temp.dropna(subset=[spend_col])
         if not temp.empty:
             if temp["Dashboard Segment"].nunique() > 1:
-                fig = px.violin(temp, x="Dashboard Segment", y=spend_col, color="Dashboard Segment",
-                                box=True, points="all", color_discrete_sequence=SEGMENT_COLORS)
-                fig.update_traces(meanline_visible=True, jitter=0.25, pointpos=0, marker=dict(size=3, opacity=0.35))
-                fig.update_layout(showlegend=False, xaxis_title="Customer segment", yaxis_title="Total spend")
-                show_chart(fig, 440)
+                fig = px.violin(
+                    temp, x="Dashboard Segment", y=spend_col,
+                    color="Dashboard Segment", box=True, points="all",
+                    color_discrete_sequence=SEGMENT_COLORS
+                )
+                fig.update_traces(
+                    meanline_visible=True, jitter=0.25, pointpos=0,
+                    marker=dict(size=3, opacity=0.30)
+                )
+                fig.update_layout(
+                    showlegend=False,
+                    xaxis_title="Customer segment",
+                    yaxis_title="Total spend"
+                )
+                show_chart(fig, 460)
             else:
-                fig = px.histogram(temp, x=spend_col, nbins=18, marginal="box",
-                                   color_discrete_sequence=["#E8C9B8"])
-                fig.update_traces(marker_line_color=BG, marker_line_width=1)
-                fig.update_layout(xaxis_title="Total spend", yaxis_title="Number of customers", showlegend=False)
+                fig = px.histogram(
+                    temp, x=spend_col, nbins=18, marginal="box",
+                    color_discrete_sequence=["#86d028"]
+                )
+                fig.update_traces(marker_line_color="rgba(0,0,0,0)", marker_opacity=0.80)
+                fig.update_layout(
+                    xaxis_title="Total spend",
+                    yaxis_title="Number of customers",
+                    showlegend=False
+                )
                 show_chart(fig, 440)
-                st.caption("Only one segment is present, so this chart shows the spending distribution within that segment instead.")
+                st.caption(
+                    "Only one segment is present — showing the spending distribution within that segment."
+                )
         else:
             st.info("No valid spending values are available for this chart.")
 
 
 # =========================================================
-# SEGMENT EXPLORER
+# ██████  SEGMENT EXPLORER
 # =========================================================
 elif page == "Segment Explorer":
 
     section(
-        "Explore customer segments",
-        "Select a segment to view its customer profile and behaviour."
+        "Segment Explorer",
+        "Select a segment to view its customer profile and behaviour patterns."
     )
 
-    segments = sorted(
-        df["Dashboard Segment"].dropna().unique()
-    )
-
-    selected = st.selectbox(
-        "Choose a customer segment",
-        segments
-    )
-
-    segment_df = df[
-        df["Dashboard Segment"] == selected
-    ].copy()
+    segments = sorted(df["Dashboard Segment"].dropna().unique())
+    selected = st.selectbox("Choose a customer segment", segments)
+    segment_df = df[df["Dashboard Segment"] == selected].copy()
 
     c1, c2, c3 = st.columns(3)
-
     c1.metric("CUSTOMERS", len(segment_df))
 
     if spend_col:
-        avg_spend = pd.to_numeric(
-            segment_df[spend_col],
-            errors="coerce"
-        ).mean()
-
-        c2.metric(
-            "AVERAGE SPEND",
-            f"{avg_spend:,.2f}"
-            if pd.notna(avg_spend) else "N/A"
-        )
+        avg_spend = pd.to_numeric(segment_df[spend_col], errors="coerce").mean()
+        c2.metric("AVERAGE SPEND", f"{avg_spend:,.2f}" if pd.notna(avg_spend) else "N/A")
     else:
         c2.metric("AVERAGE SPEND", "N/A")
 
     if age_col:
-        avg_age = pd.to_numeric(
-            segment_df[age_col],
-            errors="coerce"
-        ).mean()
-
-        c3.metric(
-            "AVERAGE AGE",
-            f"{avg_age:.1f}"
-            if pd.notna(avg_age) else "N/A"
-        )
+        avg_age = pd.to_numeric(segment_df[age_col], errors="coerce").mean()
+        c3.metric("AVERAGE AGE", f"{avg_age:.1f}" if pd.notna(avg_age) else "N/A")
     else:
         c3.metric("AVERAGE AGE", "N/A")
 
     left, right = st.columns(2)
 
     with left:
-        section(
-            "Segment profile",
-            "Summary of this customer group."
-        )
-
-        profile_cols = [
-            col for col in [
-                age_col,
-                spend_col,
-                membership_col,
-                discount_col
-            ]
-            if col is not None
-        ]
-
+        section("Segment profile", "Summary statistics for this customer group.")
+        profile_cols = [c for c in [age_col, spend_col, membership_col, discount_col] if c]
         if profile_cols:
             st.dataframe(
                 segment_df[profile_cols].describe(include="all").T,
@@ -763,198 +933,147 @@ elif page == "Segment Explorer":
             )
 
     with right:
-        section(
-            "Membership distribution",
-            "Membership types in this segment."
-        )
-
+        section("Membership distribution", "Membership types within this segment.")
         if membership_col:
             membership_counts = (
                 segment_df[membership_col]
                 .value_counts()
                 .reset_index()
             )
-
-            membership_counts.columns = [
-                "Membership",
-                "Customers"
-            ]
-
+            membership_counts.columns = ["Membership", "Customers"]
             if not membership_counts.empty:
                 fig = px.pie(
                     membership_counts,
-                names="Membership",
-                values="Customers",
-                hole=0.5,
-                    color_discrete_sequence=[GREEN, PEACH, WHEAT, "#8A9A9A"]
+                    names="Membership", values="Customers",
+                    hole=0.55,
+                    color_discrete_sequence=SEGMENT_COLORS
                 )
-                fig.update_traces(textinfo="percent+label", textfont=dict(color=BG), marker_line_color=BG, marker_line_width=2)
-                show_chart(fig, 330)
+                fig.update_traces(
+                    textinfo="percent+label",
+                    textfont=dict(color="#0b191e", size=12),
+                    marker_line_color="rgba(11,25,30,0.8)",
+                    marker_line_width=2,
+                    pull=[0.04] * len(membership_counts)
+                )
+                show_chart(fig, 340)
             else:
-                st.info("No membership values are available for this segment.")
+                st.info("No membership values available for this segment.")
         else:
             st.info("Membership column not found.")
 
-    section(
-        "Customers in this segment",
-        "Records belonging to the selected group."
-    )
-
+    section("Customers in this segment", "Individual records belonging to the selected group.")
     st.dataframe(
-        segment_df.drop(
-            columns=["Dashboard Segment"],
-            errors="ignore"
-        ),
+        segment_df.drop(columns=["Dashboard Segment"], errors="ignore"),
         use_container_width=True,
         hide_index=True
     )
 
 
 # =========================================================
-# SEGMENT SUMMARY
+# ██████  SEGMENT SUMMARY
 # =========================================================
 elif page == "Segment Summary":
 
     section(
-        "Segment summary",
-        "Compare customer groups and their key characteristics."
+        "Segment Summary",
+        "Compare customer groups and their key characteristics at a glance."
     )
 
     summary = (
         df.groupby("Dashboard Segment")
         .size()
         .reset_index(name="Customers")
-        .rename(columns={
-            "Dashboard Segment": "Customer Segment"
-        })
+        .rename(columns={"Dashboard Segment": "Customer Segment"})
     )
 
     if spend_col:
         temp = df.copy()
-        temp["_spend"] = pd.to_numeric(
-            temp[spend_col],
-            errors="coerce"
-        )
-
+        temp["_spend"] = pd.to_numeric(temp[spend_col], errors="coerce")
         spend_summary = (
             temp.groupby("Dashboard Segment")["_spend"]
             .mean()
             .reset_index(name="Average Spend")
-            .rename(columns={
-                "Dashboard Segment": "Customer Segment"
-            })
+            .rename(columns={"Dashboard Segment": "Customer Segment"})
         )
-
-        summary = summary.merge(
-            spend_summary,
-            on="Customer Segment"
-        )
+        summary = summary.merge(spend_summary, on="Customer Segment")
 
     if age_col:
         temp = df.copy()
-        temp["_age"] = pd.to_numeric(
-            temp[age_col],
-            errors="coerce"
-        )
-
+        temp["_age"] = pd.to_numeric(temp[age_col], errors="coerce")
         age_summary = (
             temp.groupby("Dashboard Segment")["_age"]
             .mean()
             .reset_index(name="Average Age")
-            .rename(columns={
-                "Dashboard Segment": "Customer Segment"
-            })
+            .rename(columns={"Dashboard Segment": "Customer Segment"})
         )
+        summary = summary.merge(age_summary, on="Customer Segment")
 
-        summary = summary.merge(
-            age_summary,
-            on="Customer Segment"
-        )
-
-    st.dataframe(
-        summary,
-        use_container_width=True,
-        hide_index=True
-    )
+    st.dataframe(summary, use_container_width=True, hide_index=True)
 
     section(
-        "Personalized marketing strategies",
-        "Suggested approaches based on each customer segment."
+        "Personalized Marketing Strategies",
+        "Suggested approaches tailored to each customer segment."
     )
 
     for _, row in summary.iterrows():
-        name = row["Customer Segment"]
-
-        st.markdown(
-            f"""
-            <div class="hover-card">
-                <h3>{name}</h3>
-                <p><b>{row['Customers']} customers</b></p>
-                <p>{STRATEGIES.get(name, 'Use personalized offers and relevant recommendations to improve engagement.')}</p>
-            </div>
-            """,
-            unsafe_allow_html=True
+        name     = row["Customer Segment"]
+        strategy = STRATEGIES.get(
+            name,
+            "Use personalized offers and relevant recommendations to improve engagement."
         )
+        st.markdown(f"""
+        <div class="glass-card">
+            <span class="card-count">{int(row['Customers']):,} customers</span>
+            <h3>{name}</h3>
+            <p>{strategy}</p>
+            <span class="card-tag">View strategy →</span>
+        </div>
+        """, unsafe_allow_html=True)
 
 
 # =========================================================
-# CUSTOMER DATA
+# ██████  CUSTOMER DATA
 # =========================================================
 elif page == "Customer Data":
 
     section(
-        "Customer database",
-        "Search, filter, and view customer records."
+        "Customer Database",
+        "Search, filter, and export customer records."
     )
 
     search = st.text_input(
         "Search customer records",
-        placeholder="Search by customer ID or any value..."
+        placeholder="Search by customer ID, name, or any value…"
     )
 
     filtered_df = df.copy()
 
     if search:
         mask = filtered_df.astype(str).apply(
-            lambda col: col.str.contains(
-                search,
-                case=False,
-                na=False
-            )
+            lambda col: col.str.contains(search, case=False, na=False)
         ).any(axis=1)
-
         filtered_df = filtered_df[mask]
 
-    segments = sorted(
-        df["Dashboard Segment"].dropna().unique()
-    )
-
+    segments          = sorted(df["Dashboard Segment"].dropna().unique())
     selected_segments = st.multiselect(
         "Filter by customer segment",
         segments,
         default=segments
     )
-
-    filtered_df = filtered_df[
-        filtered_df["Dashboard Segment"].isin(selected_segments)
-    ]
+    filtered_df = filtered_df[filtered_df["Dashboard Segment"].isin(selected_segments)]
 
     c1, c2 = st.columns(2)
-
     c1.metric("MATCHING CUSTOMERS", len(filtered_df))
-    c2.metric("TOTAL RECORDS", len(df))
+    c2.metric("TOTAL RECORDS",      len(df))
 
     st.dataframe(
-        filtered_df.drop(
-            columns=["Dashboard Segment"],
-            errors="ignore"
-        ),
+        filtered_df.drop(columns=["Dashboard Segment"], errors="ignore"),
         use_container_width=True,
         hide_index=True
     )
 
     st.download_button(
-        "Download filtered customer data",
+        "⬇  Download filtered data",
         data=filtered_df.to_csv(index=False).encode("utf-8"),
         file_name="filtered_customer_data.csv",
         mime="text/csv"
@@ -962,28 +1081,25 @@ elif page == "Customer Data":
 
 
 # =========================================================
-# CUSTOMER PREDICTION
+# ██████  CUSTOMER PREDICTION
 # =========================================================
 elif page == "Customer Prediction":
 
     section(
-        "Add and predict a customer",
+        "Add & Predict a Customer",
         "Enter customer details to predict their segment and save the record."
     )
 
     if scaler is None or encoder is None or kmeans_model is None:
         st.error(
             "Saved model files could not be loaded. "
-            "Check the error above and your files in the models folder."
+            "Check the error above and verify your files in the models/ folder."
         )
         st.stop()
 
     with st.form("customer_prediction_form"):
-
         st.markdown(
-            '<div class="section-subtitle">'
-            'Enter the customer information below.'
-            '</div>',
+            '<div class="section-subtitle">Fill in the customer details below.</div>',
             unsafe_allow_html=True
         )
 
@@ -991,32 +1107,12 @@ elif page == "Customer Prediction":
 
         with col1:
             customer_name = st.text_input("Customer name")
-
-            age = st.number_input(
-                "Age",
-                min_value=1,
-                max_value=100,
-                value=25,
-                step=1
-            )
-
-            total_spend = st.number_input(
-                "Total Spend",
-                min_value=0.0,
-                value=500.0,
-                step=50.0
-            )
+            age           = st.number_input("Age", min_value=1, max_value=100, value=25, step=1)
+            total_spend   = st.number_input("Total Spend", min_value=0.0, value=500.0, step=50.0)
 
         with col2:
-            membership = st.selectbox(
-                "Membership Type",
-                list(encoder.categories_[0])
-            )
-
-            discount = st.selectbox(
-                "Discount Applied",
-                list(encoder.categories_[1])
-            )
+            membership = st.selectbox("Membership Type", list(encoder.categories_[0]))
+            discount   = st.selectbox("Discount Applied", list(encoder.categories_[1]))
 
         submitted = st.form_submit_button(
             "Predict Customer Segment",
@@ -1025,58 +1121,41 @@ elif page == "Customer Prediction":
 
     if submitted:
         customer_input = pd.DataFrame([{
-            "Age": age,
-            "Total Spend": total_spend,
+            "Age":             age,
+            "Total Spend":     total_spend,
             "Membership Type": membership,
-            "Discount Applied": discount
+            "Discount Applied": discount,
         }])
-
         try:
-            cluster_id, segment_name = predict_customer(
-                customer_input
-            )
-
+            cluster_id, segment_name = predict_customer(customer_input)
             st.session_state["latest_prediction"] = {
-                "Customer Name": customer_name.strip() or "New Customer",
-                "Age": age,
-                "Total Spend": total_spend,
-                "Membership Type": membership,
+                "Customer Name":    customer_name.strip() or "New Customer",
+                "Age":              age,
+                "Total Spend":      total_spend,
+                "Membership Type":  membership,
                 "Discount Applied": discount,
                 "Predicted Cluster": cluster_id,
-                "Predicted Segment": segment_name
+                "Predicted Segment": segment_name,
             }
-
         except Exception as error:
             st.error(f"Prediction failed: {error}")
 
     if "latest_prediction" in st.session_state:
-        result = st.session_state["latest_prediction"]
+        result   = st.session_state["latest_prediction"]
+        strategy = STRATEGIES.get(result["Predicted Segment"], "")
 
-        st.markdown(
-            f"""
-            <div class="hover-card prediction-card">
-                <p style="color:#C9E4F2;font-weight:800;letter-spacing:2px;">
-                    PREDICTION RESULT
-                </p>
-                <h2 style="color:#F4FAFF;">{result['Predicted Segment']}</h2>
-                <p style="color:#E2F0F8;">
-                    Predicted cluster: {result['Predicted Cluster']}
-                </p>
-                <p style="color:#E2F0F8;">
-                    {STRATEGIES.get(result['Predicted Segment'], '')}
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        st.markdown(f"""
+        <div class="prediction-card">
+            <span class="pred-label">Prediction result</span>
+            <h2>{result['Predicted Segment']}</h2>
+            <div class="pred-cluster">Predicted cluster ID: {result['Predicted Cluster']}</div>
+            <div class="pred-strategy">{strategy}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        if st.button(
-            "Save this customer",
-            use_container_width=True
-        ):
+        if st.button("Save this customer", use_container_width=True):
             saved_record = result.copy()
-
-            saved_record["Saved At"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            saved_record["Saved At"]  = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             saved_record["Record ID"] = str(uuid4())
             new_row = pd.DataFrame([saved_record])
 
@@ -1088,19 +1167,13 @@ elif page == "Customer Prediction":
             else:
                 updated = new_row
 
-            updated.to_csv(
-                NEW_CUSTOMERS_FILE,
-                index=False
-            )
-
-            st.success(
-                f"Customer saved successfully to {NEW_CUSTOMERS_FILE.name}."
-            )
+            updated.to_csv(NEW_CUSTOMERS_FILE, index=False)
+            st.success(f"Customer saved to {NEW_CUSTOMERS_FILE.name}.")
 
     st.write("")
 
     section(
-        "Previously added customers",
+        "Previously Added Customers",
         "New customer records saved through this page."
     )
 
@@ -1111,14 +1184,20 @@ elif page == "Customer Prediction":
                 saved_customers["Record ID"] = [str(uuid4()) for _ in range(len(saved_customers))]
                 saved_customers.to_csv(NEW_CUSTOMERS_FILE, index=False)
 
-            st.dataframe(saved_customers.drop(columns=["Record ID"], errors="ignore"), use_container_width=True, hide_index=True)
+            st.dataframe(
+                saved_customers.drop(columns=["Record ID"], errors="ignore"),
+                use_container_width=True,
+                hide_index=True
+            )
 
-            st.markdown("**Select the customer you want to delete**")
+            st.markdown("**Select customers to delete**")
             selected_ids = []
             for i, row in saved_customers.iterrows():
-                label = (f"{row.get('Customer Name', 'Customer')} — "
-                         f"{row.get('Predicted Segment', 'Unknown')} — "
-                         f"{row.get('Saved At', 'No date')} (record {i + 1})")
+                label = (
+                    f"{row.get('Customer Name', 'Customer')}  —  "
+                    f"{row.get('Predicted Segment', 'Unknown')}  —  "
+                    f"{row.get('Saved At', 'No date')}  (record {i + 1})"
+                )
                 if st.checkbox(label, key=f"delete_customer_{row['Record ID']}"):
                     selected_ids.append(str(row["Record ID"]))
 
@@ -1126,30 +1205,35 @@ elif page == "Customer Prediction":
                 "I confirm that I want to permanently delete the selected customer(s).",
                 key="confirm_saved_customer_delete"
             )
-            if st.button("Delete selected customer(s)", type="secondary",
-                         disabled=(not selected_ids or not confirm_delete),
-                         use_container_width=True):
+
+            if st.button(
+                "Delete selected customer(s)",
+                type="secondary",
+                disabled=(not selected_ids or not confirm_delete),
+                use_container_width=True
+            ):
                 latest = pd.read_csv(NEW_CUSTOMERS_FILE)
                 if "Record ID" not in latest.columns:
                     st.error("Record identifiers are missing. No data was deleted.")
                 else:
-                    remaining = latest[~latest["Record ID"].astype(str).isin(selected_ids)]
+                    remaining     = latest[~latest["Record ID"].astype(str).isin(selected_ids)]
                     deleted_count = len(latest) - len(remaining)
                     if deleted_count == 0:
                         st.warning("Selected record(s) were not found; no data was deleted.")
                     else:
                         remaining.to_csv(NEW_CUSTOMERS_FILE, index=False)
-                        st.success(f"Deleted {deleted_count} selected customer record(s).")
+                        st.success(f"Deleted {deleted_count} customer record(s).")
                         st.rerun()
+
+            st.download_button(
+                "⬇  Download saved customers",
+                data=saved_customers.drop(columns=["Record ID"], errors="ignore")
+                                   .to_csv(index=False).encode("utf-8"),
+                file_name="new_customers.csv",
+                mime="text/csv"
+            )
         else:
             st.info("No new customers have been saved yet.")
-
-        st.download_button(
-            "Download saved customers",
-            data=saved_customers.drop(columns=["Record ID"], errors="ignore").to_csv(index=False).encode("utf-8"),
-            file_name="new_customers.csv",
-            mime="text/csv"
-        )
     else:
         st.info("No new customers have been saved yet.")
 
@@ -1159,7 +1243,16 @@ elif page == "Customer Prediction":
 # =========================================================
 st.markdown("""
 <hr>
-<p style="text-align:center;color:#DCE8D8;font-size:0.8rem;">
-    Customer Segmentation Dashboard
+<p style="
+    text-align:center;
+    color:rgba(255,255,255,0.30);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:0.72rem;
+    font-weight:600;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    margin:0;
+">
+    Customer Segmentation Intelligence &nbsp;·&nbsp; K-Means Clustering
 </p>
 """, unsafe_allow_html=True)
